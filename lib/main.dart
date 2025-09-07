@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
+import 'dart:io';
 
 void main() {
   runApp(const MyApp());
@@ -117,10 +118,46 @@ class _EditPhotoPageState extends State<EditPhotoPage> {
                 'Error: $_error',
                 style: TextStyle(color: Colors.red),
               ),
-            if (images.isNotEmpty) Text('선택된 이미지: ${images.length}개'),
+            if (images.isNotEmpty)
+              Expanded(
+                child: GridView.builder(
+                  physics: NeverScrollableScrollPhysics(),
+                  padding: EdgeInsets.all(8),
+                  gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: 2,
+                    crossAxisSpacing: 8,
+                    mainAxisSpacing: 8,
+                  ),
+                  itemCount: images.length,
+                  itemBuilder: (context, index) {
+                    return InteractiveViewerExample(
+                      child: Image.file(
+                        File(images[index].path),
+                        fit: BoxFit.cover,
+                      ),
+                    );
+                  },
+                ),
+              ),
           ],
         ),
       ),
     );
+  }
+}
+
+class InteractiveViewerExample extends StatelessWidget {
+  final Widget child;
+  const InteractiveViewerExample({super.key, required this.child});
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+        child: InteractiveViewer(
+            constrained: false,
+            transformationController: TransformationController(),
+            minScale: 0.1,
+            maxScale: 2.0,
+            child: child));
   }
 }
