@@ -1,6 +1,13 @@
+import 'dart:typed_data';
+
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:flutter/rendering.dart';
+import 'package:path_provider/path_provider.dart';
 import 'dart:io';
+import 'dart:ui' as ui;
+import 'package:flutter_image_saver/flutter_image_saver.dart';
 
 void main() {
   runApp(const MyApp());
@@ -72,6 +79,7 @@ class EditPhotoPage extends StatefulWidget {
 }
 
 class _EditPhotoPageState extends State<EditPhotoPage> {
+  final repaintBoundary = GlobalKey();
   List<XFile> images = <XFile>[];
   String _error = '';
   final ImagePicker _picker = ImagePicker();
@@ -91,6 +99,29 @@ class _EditPhotoPageState extends State<EditPhotoPage> {
       setState(() {
         _error = e.toString();
       });
+    }
+  }
+
+  Future<void> saveImage() async {
+    try {
+      final boundary = repaintBoundary.currentContext!.findRenderObject()
+          as RenderRepaintBoundary;
+      final image = await boundary.toImage(pixelRatio: 2);
+      final byteData = await image.toByteData(format: ui.ImageByteFormat.png);
+
+      // flutter_image_saver 패키지 사용
+      final result = await FlutterImageSaver.saveImage(
+        byteData!.buffer.asUint8List(),
+        name: 'collage.png',
+      );
+
+      final message = result ? 'Saved successfully' : 'Failed to save';
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text(message)));
+    } catch (e) {
+      print("Error: $e");
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text('Failed to save: $e')));
     }
   }
 
@@ -119,26 +150,37 @@ class _EditPhotoPageState extends State<EditPhotoPage> {
                 style: TextStyle(color: Colors.red),
               ),
             if (images.isNotEmpty)
-              Expanded(
-                child: GridView.builder(
-                  physics: NeverScrollableScrollPhysics(),
-                  padding: EdgeInsets.all(8),
-                  gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount: 2,
-                    crossAxisSpacing: 8,
-                    mainAxisSpacing: 8,
-                  ),
-                  itemCount: images.length,
-                  itemBuilder: (context, index) {
-                    return InteractiveViewerExample(
-                      child: Image.file(
-                        File(images[index].path),
-                        fit: BoxFit.cover,
+              RepaintBoundary(
+                  key: repaintBoundary,
+                  child: Expanded(
+                    child: GridView.builder(
+                      physics: NeverScrollableScrollPhysics(),
+                      padding: EdgeInsets.all(8),
+                      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                        crossAxisCount: 2,
+                        crossAxisSpacing: 8,
+                        mainAxisSpacing: 8,
                       ),
-                    );
-                  },
-                ),
+                      itemCount: images.length,
+                      itemBuilder: (context, index) {
+                        return InteractiveViewerExample(
+                          child: Image.file(
+                            File(images[index].path),
+                            fit: BoxFit.cover,
+                          ),
+                        );
+                      },
+                    ),
+                  )),
+            OutlinedButton(
+              onPressed: saveImage,
+              child: Container(
+                alignment: Alignment.center,
+                height: 30,
+                width: 250,
+                child: Text('이미지 선택', style: TextStyle(fontSize: 20)),
               ),
+            )
           ],
         ),
       ),
