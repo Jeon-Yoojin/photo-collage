@@ -1,13 +1,10 @@
-import 'dart:typed_data';
-
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
+import 'package:image_gallery_saver/image_gallery_saver.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:flutter/rendering.dart';
-import 'package:path_provider/path_provider.dart';
 import 'dart:io';
 import 'dart:ui' as ui;
-import 'package:flutter_image_saver/flutter_image_saver.dart';
+import 'package:permission_handler/permission_handler.dart';
 
 void main() {
   runApp(const MyApp());
@@ -102,20 +99,50 @@ class _EditPhotoPageState extends State<EditPhotoPage> {
     }
   }
 
-  Future<void> saveImage() async {
+  Future<void> _saveImage() async {
     try {
+      final shouldProceed = await showDialog<bool>(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: Text('권한 필요'),
+          content: Text('사진을 저장하기 위해 갤러리 접근 권한이 필요합니다.'),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context, false),
+              child: Text('취소'),
+            ),
+            TextButton(
+              onPressed: () => Navigator.pop(context, true),
+              child: Text('확인'),
+            ),
+          ],
+        ),
+      );
+
+      if (shouldProceed != true) return;
+
+      var status = await Permission.storage.status;
+      if (!status.isGranted) {
+        status = await Permission.storage.request();
+        if (!status.isGranted) {
+          throw Exception('갤러리 접근 권한이 필요합니다.');
+        }
+      }
+
       final boundary = repaintBoundary.currentContext!.findRenderObject()
           as RenderRepaintBoundary;
       final image = await boundary.toImage(pixelRatio: 2);
       final byteData = await image.toByteData(format: ui.ImageByteFormat.png);
 
-      // flutter_image_saver 패키지 사용
-      final result = await FlutterImageSaver.saveImage(
+      final path = await ImageGallerySaver.saveImage(
         byteData!.buffer.asUint8List(),
+        quality: 60,
         name: 'collage.png',
       );
 
-      final message = result ? 'Saved successfully' : 'Failed to save';
+      if (!mounted) return;
+
+      final message = path.isEmpty ? 'Saved successfully' : 'Failed to save';
       ScaffoldMessenger.of(context)
           .showSnackBar(SnackBar(content: Text(message)));
     } catch (e) {
@@ -150,35 +177,36 @@ class _EditPhotoPageState extends State<EditPhotoPage> {
                 style: TextStyle(color: Colors.red),
               ),
             if (images.isNotEmpty)
-              RepaintBoundary(
+              Expanded(
+                child: RepaintBoundary(
                   key: repaintBoundary,
-                  child: Expanded(
-                    child: GridView.builder(
-                      physics: NeverScrollableScrollPhysics(),
-                      padding: EdgeInsets.all(8),
-                      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                        crossAxisCount: 2,
-                        crossAxisSpacing: 8,
-                        mainAxisSpacing: 8,
-                      ),
-                      itemCount: images.length,
-                      itemBuilder: (context, index) {
-                        return InteractiveViewerExample(
-                          child: Image.file(
-                            File(images[index].path),
-                            fit: BoxFit.cover,
-                          ),
-                        );
-                      },
+                  child: GridView.builder(
+                    physics: NeverScrollableScrollPhysics(),
+                    padding: EdgeInsets.all(8),
+                    gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                      crossAxisCount: 2,
+                      crossAxisSpacing: 8,
+                      mainAxisSpacing: 8,
                     ),
-                  )),
+                    itemCount: images.length,
+                    itemBuilder: (context, index) {
+                      return InteractiveViewerExample(
+                        child: Image.file(
+                          File(images[index].path),
+                          fit: BoxFit.cover,
+                        ),
+                      );
+                    },
+                  ),
+                ),
+              ),
             OutlinedButton(
-              onPressed: saveImage,
+              onPressed: _saveImage,
               child: Container(
                 alignment: Alignment.center,
                 height: 30,
                 width: 250,
-                child: Text('이미지 선택', style: TextStyle(fontSize: 20)),
+                child: Text('이미지 저장', style: TextStyle(fontSize: 20)),
               ),
             )
           ],
