@@ -23,5 +23,8 @@ dev_dependencies:
 
   flutter_lints: ^5.0.0
 
+dependency_overrides:
+  permission_handler_apple: 9.4.5
+
 flutter:
   uses-material-design: true

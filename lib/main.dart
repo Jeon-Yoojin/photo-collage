@@ -121,9 +121,9 @@ class _EditPhotoPageState extends State<EditPhotoPage> {
 
       if (shouldProceed != true) return;
 
-      var status = await Permission.storage.status;
+      var status = await Permission.photos.status;
       if (!status.isGranted) {
-        status = await Permission.storage.request();
+        status = await Permission.photos.request();
         if (!status.isGranted) {
           throw Exception('갤러리 접근 권한이 필요합니다.');
         }
@@ -134,7 +134,7 @@ class _EditPhotoPageState extends State<EditPhotoPage> {
       final image = await boundary.toImage(pixelRatio: 2);
       final byteData = await image.toByteData(format: ui.ImageByteFormat.png);
 
-      final path = await ImageGallerySaver.saveImage(
+      final result = await ImageGallerySaver.saveImage(
         byteData!.buffer.asUint8List(),
         quality: 60,
         name: 'collage.png',
@@ -142,7 +142,7 @@ class _EditPhotoPageState extends State<EditPhotoPage> {
 
       if (!mounted) return;
 
-      final message = path.isEmpty ? 'Saved successfully' : 'Failed to save';
+      final message = result['isSuccess'] == true ? '저장 완료!' : '저장 실패';
       ScaffoldMessenger.of(context)
           .showSnackBar(SnackBar(content: Text(message)));
     } catch (e) {
