@@ -177,38 +177,25 @@ class _EditPhotoPageState extends State<EditPhotoPage> {
                 style: TextStyle(color: Colors.red),
               ),
             if (images.isNotEmpty)
-              Expanded(
-                child: RepaintBoundary(
-                  key: repaintBoundary,
-                  child: GridView.builder(
-                    physics: NeverScrollableScrollPhysics(),
-                    padding: EdgeInsets.all(8),
-                    gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                      crossAxisCount: 2,
-                      crossAxisSpacing: 8,
-                      mainAxisSpacing: 8,
+              Column(
+                children: [
+                  Expanded(
+                    child: RepaintBoundary(
+                      key: repaintBoundary,
+                      child: GridViewFrame(images: images),
                     ),
-                    itemCount: images.length,
-                    itemBuilder: (context, index) {
-                      return InteractiveViewerExample(
-                        child: Image.file(
-                          File(images[index].path),
-                          fit: BoxFit.cover,
-                        ),
-                      );
-                    },
                   ),
-                ),
+                  OutlinedButton(
+                    onPressed: _saveImage,
+                    child: Container(
+                      alignment: Alignment.center,
+                      height: 30,
+                      width: 250,
+                      child: Text('이미지 저장', style: TextStyle(fontSize: 20)),
+                    ),
+                  ),
+                ],
               ),
-            OutlinedButton(
-              onPressed: _saveImage,
-              child: Container(
-                alignment: Alignment.center,
-                height: 30,
-                width: 250,
-                child: Text('이미지 저장', style: TextStyle(fontSize: 20)),
-              ),
-            )
           ],
         ),
       ),
@@ -229,5 +216,32 @@ class InteractiveViewerExample extends StatelessWidget {
             minScale: 0.1,
             maxScale: 2.0,
             child: child));
+  }
+}
+
+class GridViewFrame extends StatelessWidget {
+  final List<XFile> images;
+  const GridViewFrame({required this.images, super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return GridView.builder(
+      physics: NeverScrollableScrollPhysics(),
+      padding: EdgeInsets.all(8),
+      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: 2,
+        crossAxisSpacing: 8,
+        mainAxisSpacing: 8,
+      ),
+      itemCount: images.length,
+      itemBuilder: (context, index) {
+        return InteractiveViewerExample(
+          child: Image.file(
+            File(images[index].path),
+            fit: BoxFit.cover,
+          ),
+        );
+      },
+    );
   }
 }
