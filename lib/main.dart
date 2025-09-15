@@ -177,25 +177,27 @@ class _EditPhotoPageState extends State<EditPhotoPage> {
                 style: TextStyle(color: Colors.red),
               ),
             if (images.isNotEmpty)
-              Column(
-                children: [
-                  Expanded(
-                    child: RepaintBoundary(
-                      key: repaintBoundary,
-                      child: GridViewFrame(images: images),
+              Expanded(
+                child: Column(
+                  children: [
+                    Expanded(
+                      child: RepaintBoundary(
+                        key: repaintBoundary,
+                        child: GridViewFrame(images: images),
+                      ),
                     ),
-                  ),
-                  OutlinedButton(
-                    onPressed: _saveImage,
-                    child: Container(
-                      alignment: Alignment.center,
-                      height: 30,
-                      width: 250,
-                      child: Text('이미지 저장', style: TextStyle(fontSize: 20)),
+                    OutlinedButton(
+                      onPressed: _saveImage,
+                      child: Container(
+                        alignment: Alignment.center,
+                        height: 30,
+                        width: 250,
+                        child: Text('이미지 저장', style: TextStyle(fontSize: 20)),
+                      ),
                     ),
-                  ),
-                ],
-              ),
+                  ],
+                ),
+              )
           ],
         ),
       ),
@@ -243,5 +245,94 @@ class GridViewFrame extends StatelessWidget {
         );
       },
     );
+  }
+}
+
+class CollageTemplate {
+  final List<CollageRow> rows;
+  CollageTemplate({required this.rows});
+
+  factory CollageTemplate.fromJson(Map<String, dynamic> json) {
+    return CollageTemplate(
+      rows: (json['rows'] as List).map((r) => CollageRow.fromJson(r)).toList(),
+    );
+  }
+}
+
+class CollageRow {
+  final List<CollageCell> cells;
+  CollageRow({required this.cells});
+
+  factory CollageRow.fromJson(Map<String, dynamic> json) {
+    return CollageRow(
+      cells:
+          (json['cells'] as List).map((c) => CollageCell.fromJson(c)).toList(),
+    );
+  }
+}
+
+class CollageCell {
+  final int flex;
+  final double? width;
+  final String? align;
+
+  CollageCell({required this.flex, this.width, this.align});
+
+  factory CollageCell.fromJson(Map<String, dynamic> json) {
+    return CollageCell(
+      flex: json['flex'] ?? 1,
+      width: json['width']?.toDouble(),
+      align: json['align'],
+    );
+  }
+}
+
+class CollageFrameBuilder extends StatelessWidget {
+  final CollageTemplate template;
+  final List<XFile> images;
+
+  const CollageFrameBuilder(
+      {required this.template, required this.images, super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    int imgIndex = 0;
+
+    return Column(
+      children: template.rows.map((row) {
+        return Padding(
+          padding: const EdgeInsets.symmetric(vertical: 4),
+          child: Row(
+            mainAxisAlignment: _mapAlignment(row),
+            children: row.cells.map((cell) {
+              final image = images[imgIndex++];
+              Widget child = Image.file(
+                File(image.path),
+                fit: BoxFit.cover,
+              );
+
+              if (cell.flex > 0) {
+                return Expanded(flex: cell.flex, child: child);
+              } else {
+                return SizedBox(width: cell.width, child: child);
+              }
+            }).toList(),
+          ),
+        );
+      }).toList(),
+    );
+  }
+
+  MainAxisAlignment _mapAlignment(CollageRow row) {
+    if (row.cells.isEmpty) return MainAxisAlignment.start;
+    final align = row.cells.first.align;
+    switch (align) {
+      case 'center':
+        return MainAxisAlignment.center;
+      case 'right':
+        return MainAxisAlignment.end;
+      default:
+        return MainAxisAlignment.start;
+    }
   }
 }
