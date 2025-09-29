@@ -49,7 +49,8 @@ class GridSelectPage extends StatelessWidget {
               onTap: () {
                 Navigator.push(
                   context,
-                  MaterialPageRoute(builder: (context) => EditPhotoPage()),
+                  MaterialPageRoute(
+                      builder: (context) => EditPhotoPage(grid: index)),
                 );
               },
               child: Column(
@@ -69,7 +70,8 @@ class GridSelectPage extends StatelessWidget {
 }
 
 class EditPhotoPage extends StatefulWidget {
-  const EditPhotoPage({super.key});
+  final int grid;
+  const EditPhotoPage({super.key, required this.grid});
 
   @override
   State<EditPhotoPage> createState() => _EditPhotoPageState();
@@ -80,6 +82,14 @@ class _EditPhotoPageState extends State<EditPhotoPage> {
   List<XFile> images = <XFile>[];
   String _error = '';
   final ImagePicker _picker = ImagePicker();
+  List<CollageTemplate> templates = [
+    CollageTemplate(rows: [
+      CollageRow(cells: [CollageCell(flex: 1), CollageCell(flex: 1)]),
+      CollageRow(
+        cells: [CollageCell(flex: 1), CollageCell(flex: 1)],
+      )
+    ]),
+  ];
 
   Future<void> getImage() async {
     try {
@@ -146,7 +156,6 @@ class _EditPhotoPageState extends State<EditPhotoPage> {
       ScaffoldMessenger.of(context)
           .showSnackBar(SnackBar(content: Text(message)));
     } catch (e) {
-      print("Error: $e");
       ScaffoldMessenger.of(context)
           .showSnackBar(SnackBar(content: Text('Failed to save: $e')));
     }
@@ -181,11 +190,12 @@ class _EditPhotoPageState extends State<EditPhotoPage> {
                 child: Column(
                   children: [
                     Expanded(
-                      child: RepaintBoundary(
-                        key: repaintBoundary,
-                        child: GridViewFrame(images: images),
-                      ),
-                    ),
+                        child: RepaintBoundary(
+                            key: repaintBoundary,
+                            child: CollageFrameBuilder(
+                              images: images,
+                              template: templates[widget.grid],
+                            ))),
                     OutlinedButton(
                       onPressed: _saveImage,
                       child: Container(
