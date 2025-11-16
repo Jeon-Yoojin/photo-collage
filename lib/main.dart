@@ -73,9 +73,7 @@ class GridSelectPage extends StatelessWidget {
 
 class SelectPhotoTemplatePage extends StatefulWidget {
   // photo template 선택
-  late int photoCount;
-
-  SelectPhotoTemplatePage({super.key});
+  const SelectPhotoTemplatePage({super.key});
 
   @override
   State<SelectPhotoTemplatePage> createState() =>
@@ -83,13 +81,7 @@ class SelectPhotoTemplatePage extends StatefulWidget {
 }
 
 class _SelectPhotoTemplatePageState extends State<SelectPhotoTemplatePage> {
-  late int photoCount;
-
-  @override
-  void initState() {
-    super.initState();
-    photoCount = widget.photoCount;
-  }
+  int photoCount = 1;
 
   @override
   Widget build(BuildContext context) {
@@ -207,30 +199,49 @@ class TemplatePreviewPage extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: Text('Select Template')),
-      body: ListView.builder(
-        itemCount: templates.length,
-        itemBuilder: (context, index) {
-          for (var template in templates[index]) {
-            return _buildTemplatePreview(template);
-          }
-          return Container();
-        },
-      ),
+      body: LayoutBuilder(builder: (context, constraints) {
+        final itemSize = constraints.maxWidth / 2;
+
+        return Wrap(
+          spacing: 0,
+          runSpacing: 0,
+          children: [
+            for (var templateList in templates)
+              for (var template in templateList)
+                SizedBox(
+                  width: itemSize,
+                  height: itemSize,
+                  child: Padding(
+                      padding: const EdgeInsets.all(8.0),
+                      child: _buildTemplatePreview(context, template)),
+                ),
+          ],
+        );
+      }),
     );
   }
 
-  Widget _buildTemplatePreview(CollageTemplate template) {
-    return Container(
-      color: Colors.white,
-      child: CollageFrameBuilder(template: template, images: []),
+  Widget _buildTemplatePreview(BuildContext context, CollageTemplate template) {
+    return GestureDetector(
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => EditPhotoPage(template: template),
+          ),
+        );
+      },
+      child: Container(
+        color: Colors.white,
+        child: CollageFrameBuilder(template: template, images: []),
+      ),
     );
   }
 }
 
 class EditPhotoPage extends StatefulWidget {
-  final int grid;
-  final List<List<CollageTemplate>> templates;
-  const EditPhotoPage({super.key, required this.grid, required this.templates});
+  final CollageTemplate template;
+  const EditPhotoPage({super.key, required this.template});
 
   @override
   State<EditPhotoPage> createState() => _EditPhotoPageState();
@@ -241,11 +252,6 @@ class _EditPhotoPageState extends State<EditPhotoPage> {
   List<XFile> images = <XFile>[];
   String _error = '';
   final ImagePicker _picker = ImagePicker();
-
-  @override
-  void initState() {
-    super.initState();
-  }
 
   Future<void> getImage() async {
     try {
@@ -350,11 +356,10 @@ class _EditPhotoPageState extends State<EditPhotoPage> {
                         key: repaintBoundary,
                         child: Column(
                           children: [
-                            for (var template in widget.templates[widget.grid])
-                              CollageFrameBuilder(
-                                images: images,
-                                template: template,
-                              )
+                            CollageFrameBuilder(
+                              images: images,
+                              template: widget.template,
+                            )
                           ],
                         ),
                       ),
