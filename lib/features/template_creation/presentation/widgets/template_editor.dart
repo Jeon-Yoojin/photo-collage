@@ -1,8 +1,268 @@
 import 'package:flutter/material.dart';
+import 'package:recall_scanner/models/frame_cell.dart';
 
-class TemplateEditorCanvas extends StatefulWidget {}
+class TemplateEditorCanvas extends StatefulWidget {
+  const TemplateEditorCanvas({super.key});
+
+  @override
+  State<TemplateEditorCanvas> createState() => _TemplateEditorCanvasState();
+}
 
 class _TemplateEditorCanvasState extends State<TemplateEditorCanvas> {
-  int widgetCount = 0;
-  List<Widget> widgets = [];
+  FrameCell? selectedShape;
+  static const double resizeable_handle_size = 16;
+  List<FrameCell> shapes = [];
+
+  final List<String> addableWidgets = ['rectangle', 'square', 'circle'];
+
+  void deleteItem() {
+    setState(() {
+      if (selectedShape != null) {
+        shapes.removeWhere((shape) => shape.id == selectedShape!.id);
+      }
+      selectedShape = null;
+    });
+  }
+
+  IconData _getShapeIcon(String shape) {
+    switch (shape) {
+      case 'rectangle':
+        return Icons.crop_free;
+      case 'square':
+        return Icons.crop_square;
+      case 'circle':
+        return Icons.radio_button_unchecked;
+      default:
+        return Icons.add;
+    }
+  }
+
+  Widget _buildFloatingMenu(FrameCell shape) {
+    return Container(
+      padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(8),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.2),
+            blurRadius: 8,
+            offset: Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          IconButton(
+            icon: Icon(Icons.copy, size: 20),
+            onPressed: () {
+              setState(() {
+                shapes.add(FrameCell(
+                  id: UniqueKey().toString(),
+                  type: shape.type,
+                  x: shape.x + 20,
+                  y: shape.y + 20,
+                  width: shape.width,
+                  height: shape.height,
+                  borderRadius: shape.borderRadius,
+                  rotation: shape.rotation,
+                ));
+              });
+            },
+            tooltip: '복사',
+            padding: EdgeInsets.all(4),
+            constraints: BoxConstraints(),
+          ),
+          IconButton(
+            icon: Icon(Icons.flip_to_front),
+            onPressed: () {
+              setState(() {
+                int index = shapes.indexOf(shape);
+                if (index == shapes.length - 1) return;
+
+                shapes.removeAt(index);
+                shapes.insert(index + 1, shape);
+              });
+            },
+            tooltip: '앞으로 가져오기',
+            padding: EdgeInsets.all(4),
+            constraints: BoxConstraints(),
+          ),
+          IconButton(
+            icon: Icon(Icons.flip_to_back),
+            onPressed: () {
+              setState(() {
+                int index = shapes.indexOf(shape);
+                if (index == 0) return;
+
+                shapes.removeAt(index);
+                shapes.insert(index - 1, shape);
+              });
+            },
+            tooltip: '뒤로 보내기',
+            padding: EdgeInsets.all(4),
+            constraints: BoxConstraints(),
+          )
+        ],
+      ),
+    );
+  }
+
+  Widget _buildResizable(FrameCell shape) {
+    return GestureDetector(
+      onPanUpdate: (details) {
+        setState(() {
+          selectedShape = null;
+          shape.x += details.delta.dx;
+          shape.y += details.delta.dy;
+        });
+      },
+      onTap: () {
+        setState(() {
+          selectedShape = shape;
+        });
+      },
+      child: Stack(children: [
+        Container(
+          width: shape.width,
+          height: shape.height,
+          decoration: BoxDecoration(
+            color: Colors.grey[100],
+            border: Border.all(
+                color: selectedShape == shape
+                    ? Colors.grey[500]!
+                    : Colors.grey[300]!,
+                width: selectedShape == shape ? 3 : 1,
+                style: BorderStyle.solid),
+            borderRadius: BorderRadius.circular(shape.borderRadius),
+            boxShadow: selectedShape == shape
+                ? [
+                    BoxShadow(
+                      color: Colors.blue.withValues(alpha: 0.3),
+                      blurRadius: 8,
+                      spreadRadius: 2,
+                    )
+                  ]
+                : null,
+          ),
+          child: Center(
+            child: Icon(
+              Icons.photo,
+              color: Colors.grey[400],
+              size: 32,
+            ),
+          ),
+        ),
+        Positioned(
+          right: -8,
+          bottom: -8,
+          child: GestureDetector(
+            behavior: HitTestBehavior.translucent,
+            onPanUpdate: (details) {
+              if (selectedShape == shape) {
+                setState(() {
+                  shape.width += details.delta.dx;
+                  shape.height += details.delta.dy;
+
+                  if (shape.width < 50) shape.width = 50;
+                  if (shape.height < 50) shape.height = 50;
+                });
+              }
+            },
+            child: selectedShape == shape
+                ? Container(
+                    width: resizeable_handle_size,
+                    height: resizeable_handle_size,
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      border: Border.all(),
+                      shape: BoxShape.circle,
+                    ),
+                  )
+                : SizedBox.shrink(),
+          ),
+        )
+      ]),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      body: Stack(children: [
+        ...shapes.map((shape) => Positioned(
+              left: shape.x,
+              top: shape.y,
+              child: _buildResizable(shape),
+            )),
+        if (selectedShape != null)
+          Positioned(
+            left: selectedShape!.x + selectedShape!.width / 2,
+            top: selectedShape!.y - 50,
+            child: Transform.translate(
+              offset: Offset(-40, 0),
+              child: _buildFloatingMenu(selectedShape!),
+            ),
+          ),
+      ]),
+      bottomNavigationBar: BottomAppBar(
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+          children: [
+            PopupMenuButton<String>(
+              icon: Icon(Icons.add),
+              itemBuilder: (context) => [
+                for (var shape in addableWidgets)
+                  PopupMenuItem(
+                    value: shape,
+                    child: Row(
+                      children: [
+                        Icon(_getShapeIcon(shape)),
+                        SizedBox(width: 8),
+                        Text(shape),
+                      ],
+                    ),
+                  ),
+              ],
+              onSelected: (String type) {
+                setState(() {
+                  shapes.add(FrameCell(
+                      id: UniqueKey().toString(),
+                      type: type,
+                      x: 50,
+                      y: 50,
+                      width: 100,
+                      height: 100));
+                });
+              },
+            ),
+            IconButton(
+              icon: Icon(Icons.delete),
+              onPressed: () {
+                deleteItem();
+              },
+              tooltip: '삭제',
+            ),
+            IconButton(
+                icon: Icon(Icons.add_reaction_sharp),
+                onPressed: () {
+                  // 팝업 형태
+                },
+                tooltip: '스티커 추가'),
+            IconButton(
+              icon: Icon(Icons.undo),
+              onPressed: () {},
+              tooltip: '실행 취소',
+            ),
+            IconButton(
+              icon: Icon(Icons.redo),
+              onPressed: () {},
+              tooltip: '다시 실행',
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 }
