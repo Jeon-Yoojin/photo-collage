@@ -10,6 +10,14 @@ class AddTemplatePage extends StatefulWidget {
 }
 
 class _AddTemplatePageState extends State<AddTemplatePage> {
+  double? selectedAspectRatio;
+
+  void _setSelectedAspectRatio(double aspectRatio) {
+    setState(() {
+      selectedAspectRatio = aspectRatio;
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -37,7 +45,9 @@ class _AddTemplatePageState extends State<AddTemplatePage> {
       //     ),
       //   )
       // ]),
-      body: TemplateEditorCanvas(),
+      body: TemplateEditorCanvas(
+          selectedAspectRatio: selectedAspectRatio,
+          setSelectedAspectRatio: _setSelectedAspectRatio),
     );
   }
 }

@@ -2,7 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:recall_scanner/models/frame_cell.dart';
 
 class TemplateEditorCanvas extends StatefulWidget {
-  const TemplateEditorCanvas({super.key});
+  final double? selectedAspectRatio;
+  final Function(double) setSelectedAspectRatio;
+  const TemplateEditorCanvas(
+      {super.key,
+      this.selectedAspectRatio,
+      required this.setSelectedAspectRatio});
 
   @override
   State<TemplateEditorCanvas> createState() => _TemplateEditorCanvasState();
@@ -187,25 +192,93 @@ class _TemplateEditorCanvasState extends State<TemplateEditorCanvas> {
     );
   }
 
+  double _parseAspectRatio(String ratio) {
+    final parts = ratio.split(':');
+    if (parts.length != 2) return 1.0;
+    final width = double.tryParse(parts[0]) ?? 1.0;
+    final height = double.tryParse(parts[1]) ?? 1.0;
+    return width / height;
+  }
+
+  Widget _buildCanvasSizeHandler() {
+    final List<String> aspectRatioStrings = [
+      '1:1',
+      '4:5',
+      '9:16',
+      '3:4',
+      '16:9',
+      '3:2'
+    ];
+
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      child: Row(
+        children: aspectRatioStrings.map((ratioString) {
+          final ratioValue = _parseAspectRatio(ratioString);
+          final isSelected = widget.selectedAspectRatio != null &&
+              (widget.selectedAspectRatio! - ratioValue).abs() < 0.01;
+          return Padding(
+            padding: EdgeInsets.symmetric(horizontal: 4),
+            child: ChoiceChip(
+              label: Text(ratioString),
+              selected: isSelected,
+              onSelected: (selected) {
+                widget.setSelectedAspectRatio(ratioValue);
+              },
+              selectedColor: Colors.blue.withValues(alpha: 0.3),
+              checkmarkColor: Colors.blue,
+            ),
+          );
+        }).toList(),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: Stack(children: [
-        ...shapes.map((shape) => Positioned(
-              left: shape.x,
-              top: shape.y,
-              child: _buildResizable(shape),
-            )),
-        if (selectedShape != null)
-          Positioned(
-            left: selectedShape!.x + selectedShape!.width / 2,
-            top: selectedShape!.y - 50,
-            child: Transform.translate(
-              offset: Offset(-40, 0),
-              child: _buildFloatingMenu(selectedShape!),
+      body: Column(
+        children: [
+          Expanded(
+            child: AspectRatio(
+              aspectRatio: widget.selectedAspectRatio ?? 1.0,
+              child: Container(
+                color: Colors.white,
+                child: Stack(children: [
+                  ...shapes.map((shape) => Positioned(
+                        left: shape.x,
+                        top: shape.y,
+                        child: _buildResizable(shape),
+                      )),
+                  if (selectedShape != null)
+                    Positioned(
+                      left: selectedShape!.x + selectedShape!.width / 2,
+                      top: selectedShape!.y - 50,
+                      child: Transform.translate(
+                        offset: Offset(-40, 0),
+                        child: _buildFloatingMenu(selectedShape!),
+                      ),
+                    ),
+                ]),
+              ),
             ),
           ),
-      ]),
+          Container(
+            padding: EdgeInsets.symmetric(vertical: 8, horizontal: 16),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.1),
+                  blurRadius: 4,
+                  offset: Offset(0, -2),
+                ),
+              ],
+            ),
+            child: _buildCanvasSizeHandler(),
+          ),
+        ],
+      ),
       bottomNavigationBar: BottomAppBar(
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceEvenly,
