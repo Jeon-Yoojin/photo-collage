@@ -3,11 +3,17 @@ import 'package:recall_scanner/models/frame_cell.dart';
 
 class TemplateEditorCanvas extends StatefulWidget {
   final double? selectedAspectRatio;
+  final double? canvasWidth;
+  final double? canvasHeight;
   final Function(double) setSelectedAspectRatio;
-  const TemplateEditorCanvas(
-      {super.key,
-      this.selectedAspectRatio,
-      required this.setSelectedAspectRatio});
+
+  const TemplateEditorCanvas({
+    super.key,
+    this.selectedAspectRatio,
+    this.canvasWidth,
+    this.canvasHeight,
+    required this.setSelectedAspectRatio,
+  });
 
   @override
   State<TemplateEditorCanvas> createState() => _TemplateEditorCanvasState();
@@ -240,27 +246,61 @@ class _TemplateEditorCanvasState extends State<TemplateEditorCanvas> {
       body: Column(
         children: [
           Expanded(
-            child: AspectRatio(
-              aspectRatio: widget.selectedAspectRatio ?? 1.0,
-              child: Container(
-                color: Colors.white,
-                child: Stack(children: [
-                  ...shapes.map((shape) => Positioned(
-                        left: shape.x,
-                        top: shape.y,
-                        child: _buildResizable(shape),
-                      )),
-                  if (selectedShape != null)
-                    Positioned(
-                      left: selectedShape!.x + selectedShape!.width / 2,
-                      top: selectedShape!.y - 50,
-                      child: Transform.translate(
-                        offset: Offset(-40, 0),
-                        child: _buildFloatingMenu(selectedShape!),
-                      ),
-                    ),
-                ]),
-              ),
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                double canvasWidth;
+                double canvasHeight;
+
+                // width와 height가 명시적으로 지정된 경우
+                if (widget.canvasWidth != null && widget.canvasHeight != null) {
+                  canvasWidth = widget.canvasWidth!;
+                  canvasHeight = widget.canvasHeight!;
+                } else if (widget.selectedAspectRatio != null) {
+                  final aspectRatio = widget.selectedAspectRatio!;
+                  // 가로가 더 긴 경우 (landscape)
+                  if (aspectRatio >= 1.0) {
+                    canvasWidth = constraints.maxWidth;
+                    canvasHeight = canvasWidth / aspectRatio;
+                  }
+                  // 세로가 더 긴 경우 (portrait)
+                  else {
+                    canvasHeight = constraints.maxHeight;
+                    canvasWidth = canvasHeight * aspectRatio;
+                  }
+                }
+                // default (1:1)
+                else {
+                  final size = constraints.maxWidth < constraints.maxHeight
+                      ? constraints.maxWidth
+                      : constraints.maxHeight;
+                  canvasWidth = size;
+                  canvasHeight = size;
+                }
+
+                return Center(
+                  child: Container(
+                    width: canvasWidth,
+                    height: canvasHeight,
+                    color: Colors.white,
+                    child: Stack(children: [
+                      ...shapes.map((shape) => Positioned(
+                            left: shape.x,
+                            top: shape.y,
+                            child: _buildResizable(shape),
+                          )),
+                      if (selectedShape != null)
+                        Positioned(
+                          left: selectedShape!.x + selectedShape!.width / 2,
+                          top: selectedShape!.y - 50,
+                          child: Transform.translate(
+                            offset: Offset(-40, 0),
+                            child: _buildFloatingMenu(selectedShape!),
+                          ),
+                        ),
+                    ]),
+                  ),
+                );
+              },
             ),
           ),
           Container(
