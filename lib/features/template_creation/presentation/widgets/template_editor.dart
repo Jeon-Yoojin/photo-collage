@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:recall_scanner/features/template_creation/presentation/pages/add_template_page.dart';
 import 'package:recall_scanner/models/frame_cell.dart';
 
 class TemplateEditorCanvas extends StatefulWidget {
@@ -33,6 +34,13 @@ class _TemplateEditorCanvasState extends State<TemplateEditorCanvas> {
       }
       selectedShape = null;
     });
+  }
+
+  void saveTemplate() {
+    // shpaes와 canvasWidth, canvasHeight를 이용해서 CollageTemplateNew 객체를 생성
+    CollageTemplateNew template = CollageTemplateNew(cells: shapes);
+
+    // template를 local 메모리에 저장
   }
 
   IconData _getShapeIcon(String shape) {
@@ -120,13 +128,30 @@ class _TemplateEditorCanvasState extends State<TemplateEditorCanvas> {
     );
   }
 
-  Widget _buildResizable(FrameCell shape) {
+  Widget _buildResizable(
+      FrameCell shape, double? canvasWidth, double? canvasHeight) {
     return GestureDetector(
       onPanUpdate: (details) {
         setState(() {
           selectedShape = null;
-          shape.x += details.delta.dx;
-          shape.y += details.delta.dy;
+          double newX = shape.x + details.delta.dx;
+          double newY = shape.y + details.delta.dy;
+
+          // canvas 경계 체크
+          if (canvasWidth != null && canvasHeight != null) {
+            if (newX < 0) newX = 0;
+            if (newX + shape.width > canvasWidth) {
+              newX = canvasWidth - shape.width;
+            }
+
+            if (newY < 0) newY = 0;
+            if (newY + shape.height > canvasHeight) {
+              newY = canvasHeight - shape.height;
+            }
+          }
+
+          shape.x = newX;
+          shape.y = newY;
         });
       },
       onTap: () {
@@ -282,22 +307,25 @@ class _TemplateEditorCanvasState extends State<TemplateEditorCanvas> {
                     width: canvasWidth,
                     height: canvasHeight,
                     color: Colors.white,
-                    child: Stack(children: [
-                      ...shapes.map((shape) => Positioned(
-                            left: shape.x,
-                            top: shape.y,
-                            child: _buildResizable(shape),
-                          )),
-                      if (selectedShape != null)
-                        Positioned(
-                          left: selectedShape!.x + selectedShape!.width / 2,
-                          top: selectedShape!.y - 50,
-                          child: Transform.translate(
-                            offset: Offset(-40, 0),
-                            child: _buildFloatingMenu(selectedShape!),
+                    child: ClipRect(
+                      child: Stack(children: [
+                        ...shapes.map((shape) => Positioned(
+                              left: shape.x,
+                              top: shape.y,
+                              child: _buildResizable(
+                                  shape, canvasWidth, canvasHeight),
+                            )),
+                        if (selectedShape != null)
+                          Positioned(
+                            left: selectedShape!.x + selectedShape!.width / 2,
+                            top: selectedShape!.y - 50,
+                            child: Transform.translate(
+                              offset: Offset(-40, 0),
+                              child: _buildFloatingMenu(selectedShape!),
+                            ),
                           ),
-                        ),
-                    ]),
+                      ]),
+                    ),
                   ),
                 );
               },
@@ -373,6 +401,11 @@ class _TemplateEditorCanvasState extends State<TemplateEditorCanvas> {
               onPressed: () {},
               tooltip: '다시 실행',
             ),
+            IconButton(
+                onPressed: () {
+                  saveTemplate();
+                },
+                icon: Icon(Icons.save))
           ],
         ),
       ),
