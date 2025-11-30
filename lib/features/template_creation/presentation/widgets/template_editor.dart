@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:recall_scanner/features/template_creation/presentation/pages/add_template_page.dart';
+import 'package:recall_scanner/data/database/cell_model.dart';
+import 'package:recall_scanner/data/database/template_model.dart';
+import 'package:recall_scanner/data/isar_service.dart';
 import 'package:recall_scanner/models/frame_cell.dart';
 
 class TemplateEditorCanvas extends StatefulWidget {
@@ -36,11 +38,34 @@ class _TemplateEditorCanvasState extends State<TemplateEditorCanvas> {
     });
   }
 
-  void saveTemplate() {
-    // shpaes와 canvasWidth, canvasHeight를 이용해서 CollageTemplateNew 객체를 생성
-    CollageTemplateNew template = CollageTemplateNew(cells: shapes);
+  Future<void> saveTemplate() async {
+    final isar = await IsarService.instance;
 
-    // template를 local 메모리에 저장
+    final template = TemplateModel()
+      ..canvasWidth = widget.canvasWidth ?? 0
+      ..canvasHeight = widget.canvasHeight ?? 0
+      ..aspectRatio = widget.selectedAspectRatio ?? 1.0;
+
+    await isar.writeTxn(() async {
+      await isar.templateModels.put(template);
+
+      for (var shape in shapes) {
+        final cell = CellModel()
+          ..x = shape.x
+          ..y = shape.y
+          ..width = shape.width
+          ..height = shape.height
+          ..borderRadius = shape.borderRadius
+          ..rotation = shape.rotation
+          ..type = shape.type;
+
+        await isar.cellModels.put(cell);
+
+        template.cells.add(cell);
+      }
+
+      await template.cells.save();
+    });
   }
 
   IconData _getShapeIcon(String shape) {
