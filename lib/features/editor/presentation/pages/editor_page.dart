@@ -4,11 +4,11 @@ import 'package:image_gallery_saver/image_gallery_saver.dart';
 import 'package:image_picker/image_picker.dart';
 import 'dart:ui' as ui;
 import 'package:permission_handler/permission_handler.dart';
-import '../../../../models/collage_template.dart';
+import 'package:recall_scanner/data/database/template_model.dart';
 import '../widgets/collage_frame_builder.dart';
 
 class EditPhotoPage extends StatefulWidget {
-  final CollageTemplate template;
+  final TemplateModel template;
   const EditPhotoPage({super.key, required this.template});
 
   @override
@@ -17,27 +17,7 @@ class EditPhotoPage extends StatefulWidget {
 
 class _EditPhotoPageState extends State<EditPhotoPage> {
   final repaintBoundary = GlobalKey();
-  List<XFile> images = <XFile>[];
-  String _error = '';
-  final ImagePicker _picker = ImagePicker();
-
-  Future<void> getImage() async {
-    try {
-      final List<XFile> selectedImages = await _picker.pickMultiImage();
-      if (!mounted) return;
-
-      setState(() {
-        images = selectedImages;
-        _error = '';
-      });
-    } catch (e) {
-      if (!mounted) return;
-
-      setState(() {
-        _error = e.toString();
-      });
-    }
-  }
+  Map<int, XFile> imageMap = <int, XFile>{};
 
   Future<void> _saveImage() async {
     try {
@@ -97,55 +77,38 @@ class _EditPhotoPageState extends State<EditPhotoPage> {
       appBar: AppBar(
         title: Text("Make your own collage!"),
       ),
-      body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: <Widget>[
-            OutlinedButton(
-              onPressed: getImage,
-              child: Container(
-                alignment: Alignment.center,
-                height: 30,
-                width: 250,
-                child: Text('이미지 선택', style: TextStyle(fontSize: 20)),
+      body: Column(
+        children: [
+          Expanded(
+            child: RepaintBoundary(
+              key: repaintBoundary,
+              child: AspectRatio(
+                aspectRatio: widget.template.aspectRatio,
+                child: Container(
+                  color: Colors.white,
+                  child: CollageFrameBuilder(
+                    imageMap: imageMap,
+                    template: widget.template,
+                    onImageSelected: (cellId, image) {
+                      setState(() {
+                        imageMap[cellId] = image;
+                      });
+                    },
+                  ),
+                ),
               ),
             ),
-            if (_error.isNotEmpty)
-              Text(
-                'Error: $_error',
-                style: TextStyle(color: Colors.red),
-              ),
-            if (images.isNotEmpty)
-              Expanded(
-                child: Column(
-                  children: [
-                    Expanded(
-                      child: RepaintBoundary(
-                        key: repaintBoundary,
-                        child: Column(
-                          children: [
-                            CollageFrameBuilder(
-                              images: images,
-                              template: widget.template,
-                            )
-                          ],
-                        ),
-                      ),
-                    ),
-                    OutlinedButton(
-                      onPressed: _saveImage,
-                      child: Container(
-                        alignment: Alignment.center,
-                        height: 30,
-                        width: 250,
-                        child: Text('이미지 저장', style: TextStyle(fontSize: 20)),
-                      ),
-                    ),
-                  ],
-                ),
-              )
-          ],
-        ),
+          ),
+          OutlinedButton(
+            onPressed: _saveImage,
+            child: Container(
+              alignment: Alignment.center,
+              height: 30,
+              width: 250,
+              child: Text('이미지 저장', style: TextStyle(fontSize: 20)),
+            ),
+          ),
+        ],
       ),
     );
   }

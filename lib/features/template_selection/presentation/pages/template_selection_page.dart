@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:isar/isar.dart';
+import 'package:recall_scanner/data/database/template_model.dart';
+import 'package:recall_scanner/data/isar_service.dart';
 import 'dart:math' as math;
 import '../../../../models/collage_template.dart';
 import '../../../../models/collage_row.dart';
@@ -16,6 +19,17 @@ class SelectPhotoTemplatePage extends StatefulWidget {
 
 class _SelectPhotoTemplatePageState extends State<SelectPhotoTemplatePage> {
   int photoCount = 1;
+  late List<TemplateModel> templates;
+
+  @override
+  void initState() {
+    super.initState();
+    _getTemplates().then((value) {
+      setState(() {
+        templates = value;
+      });
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -39,7 +53,6 @@ class _SelectPhotoTemplatePageState extends State<SelectPhotoTemplatePage> {
             onChanged: (value) {
               setState(() {
                 photoCount = value!;
-                templates = _generateTemplates();
               });
             },
           ),
@@ -59,7 +72,10 @@ class _SelectPhotoTemplatePageState extends State<SelectPhotoTemplatePage> {
     );
   }
 
-  List<List<CollageTemplate>> templates = [];
+  Future<List<TemplateModel>> _getTemplates() async {
+    final isar = await IsarService.instance;
+    return await isar.templateModels.where().findAll();
+  }
 
   List<List<CollageTemplate>> _generateTemplates() {
     final photoCount = this.photoCount;

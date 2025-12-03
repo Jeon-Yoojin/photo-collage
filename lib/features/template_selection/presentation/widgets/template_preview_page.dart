@@ -1,11 +1,10 @@
 import 'package:flutter/material.dart';
-import '../../../../models/collage_template.dart';
+import 'package:recall_scanner/data/database/template_model.dart';
 import '../../../editor/presentation/pages/editor_page.dart';
-import '../../../editor/presentation/widgets/collage_frame_builder.dart';
 import '../../../template_creation/presentation/pages/add_template_page.dart';
 
 class TemplatePreviewPage extends StatelessWidget {
-  final List<List<CollageTemplate>> templates;
+  final List<TemplateModel> templates;
   const TemplatePreviewPage({required this.templates, super.key});
 
   @override
@@ -19,15 +18,14 @@ class TemplatePreviewPage extends StatelessWidget {
           spacing: 0,
           runSpacing: 0,
           children: [
-            for (var templateList in templates)
-              for (var template in templateList)
-                SizedBox(
-                  width: itemSize,
-                  height: itemSize,
-                  child: Padding(
-                      padding: const EdgeInsets.all(8.0),
-                      child: _buildTemplatePreview(context, template)),
-                ),
+            for (var template in templates)
+              SizedBox(
+                width: itemSize,
+                height: itemSize,
+                child: Padding(
+                    padding: const EdgeInsets.all(8.0),
+                    child: _buildTemplatePreview(context, template)),
+              ),
           ],
         );
       }),
@@ -46,19 +44,21 @@ class TemplatePreviewPage extends StatelessWidget {
     );
   }
 
-  Widget _buildTemplatePreview(BuildContext context, CollageTemplate template) {
+  Widget _buildTemplatePreview(BuildContext context, TemplateModel template) {
     return GestureDetector(
       onTap: () {
         Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (context) => EditPhotoPage(template: template),
-          ),
-        );
+            context,
+            MaterialPageRoute(
+              builder: (context) => EditPhotoPage(template: template),
+            ));
       },
       child: Container(
         color: Colors.white,
-        child: CollageFrameBuilder(template: template, images: []),
+        child: Container(
+            // 임시로 id 출력
+            alignment: Alignment.center,
+            child: Text(template.id.toString())),
       ),
     );
   }

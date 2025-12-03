@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
-import '../../../../models/collage_template.dart';
+import 'package:recall_scanner/data/database/template_model.dart';
 import '../../../template_selection/presentation/widgets/template_preview_page.dart';
 
 class GridSelectPage extends StatelessWidget {
-  final List<List<CollageTemplate>> templates;
+  final List<TemplateModel> templates;
   const GridSelectPage({required this.templates, super.key});
 
   @override
