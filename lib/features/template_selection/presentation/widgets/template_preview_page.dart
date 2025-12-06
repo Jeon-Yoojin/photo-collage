@@ -14,9 +14,9 @@ class TemplatePreviewPage extends StatelessWidget {
       body: LayoutBuilder(builder: (context, constraints) {
         final itemSize = constraints.maxWidth / 2;
 
-        return Wrap(
-          spacing: 0,
-          runSpacing: 0,
+        return GridView.count(
+          padding: const EdgeInsets.all(5),
+          crossAxisCount: 2,
           children: [
             for (var template in templates)
               SizedBox(
