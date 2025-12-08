@@ -19,6 +19,7 @@ dependencies:
   permission_handler: ^12.0.1
   isar: *isar_version
   isar_flutter_libs: *isar_version
+  provider: ^6.1.5
 
 dev_dependencies:
   flutter_test:

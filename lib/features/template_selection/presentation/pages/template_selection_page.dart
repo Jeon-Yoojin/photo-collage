@@ -61,8 +61,7 @@ class _SelectPhotoTemplatePageState extends State<SelectPhotoTemplatePage> {
               Navigator.push(
                   context,
                   MaterialPageRoute(
-                    builder: (context) =>
-                        TemplatePreviewPage(templates: templates),
+                    builder: (context) => const TemplatePreviewPage(),
                   ));
             },
             child: Text('확인'),
