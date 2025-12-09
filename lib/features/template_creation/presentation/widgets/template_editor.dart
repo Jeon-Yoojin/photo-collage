@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:recall_scanner/data/database/cell_model.dart';
 import 'package:recall_scanner/data/database/template_model.dart';
-import 'package:recall_scanner/data/isar_service.dart';
+import 'package:recall_scanner/data/repository/template_repository.dart';
 import 'package:recall_scanner/models/frame_cell.dart';
+import 'package:recall_scanner/provider/change_notifier.dart';
 
 class TemplateEditorCanvas extends StatefulWidget {
   final double? selectedAspectRatio;
@@ -39,33 +41,29 @@ class _TemplateEditorCanvasState extends State<TemplateEditorCanvas> {
   }
 
   Future<void> saveTemplate() async {
-    final isar = await IsarService.instance;
+    final repo = TemplateRepository();
+    final provider = Provider.of<TemplateProvider>(context, listen: false);
 
     final template = TemplateModel()
       ..canvasWidth = widget.canvasWidth ?? 0
       ..canvasHeight = widget.canvasHeight ?? 0
       ..aspectRatio = widget.selectedAspectRatio ?? 1.0;
 
-    await isar.writeTxn(() async {
-      await isar.templateModels.put(template);
+    final cells = <CellModel>[];
+    for (var shape in shapes) {
+      final cell = CellModel()
+        ..x = shape.x
+        ..y = shape.y
+        ..width = shape.width
+        ..height = shape.height
+        ..borderRadius = shape.borderRadius
+        ..rotation = shape.rotation
+        ..type = shape.type;
 
-      for (var shape in shapes) {
-        final cell = CellModel()
-          ..x = shape.x
-          ..y = shape.y
-          ..width = shape.width
-          ..height = shape.height
-          ..borderRadius = shape.borderRadius
-          ..rotation = shape.rotation
-          ..type = shape.type;
-
-        await isar.cellModels.put(cell);
-
-        template.cells.add(cell);
-      }
-
-      await template.cells.save();
-    });
+      cells.add(cell);
+    }
+    final savedTemplate = await repo.saveTemplate(template, cells);
+    await provider.addTemplate(savedTemplate);
   }
 
   IconData _getShapeIcon(String shape) {

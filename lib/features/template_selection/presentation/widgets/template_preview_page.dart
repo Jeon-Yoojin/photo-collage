@@ -16,10 +16,6 @@ class _TemplatePreviewPageState extends State<TemplatePreviewPage> {
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      final templateProvider = Provider.of<Template>(context, listen: false);
-      templateProvider.loadTemplates();
-    });
   }
 
   @override
@@ -29,7 +25,7 @@ class _TemplatePreviewPageState extends State<TemplatePreviewPage> {
       body: LayoutBuilder(builder: (context, constraints) {
         final itemSize = constraints.maxWidth / 2;
 
-        return Consumer<Template>(
+        return Consumer<TemplateProvider>(
           builder: (context, templateProvider, child) {
             if (templateProvider.templates.isEmpty) {
               return Center(child: Text('템플릿이 없습니다'));

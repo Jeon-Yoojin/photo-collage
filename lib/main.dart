@@ -5,5 +5,5 @@ import 'app/app.dart';
 
 void main() {
   runApp(ChangeNotifierProvider(
-      create: (context) => Template(), child: const MyApp()));
+      create: (context) => TemplateProvider(), child: const MyApp()));
 }
