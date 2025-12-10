@@ -1,3 +1,4 @@
+import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:recall_scanner/data/database/cell_model.dart';
@@ -26,7 +27,9 @@ class TemplateEditorCanvas extends StatefulWidget {
 
 class _TemplateEditorCanvasState extends State<TemplateEditorCanvas> {
   FrameCell? selectedShape;
-  static const double resizeable_handle_size = 16;
+  static const double RESIZABLE_HANDLER_SIZE = 10;
+  final MIN_WIDTH = 50.0;
+  final MIN_HEIGHT = 50.0;
   List<FrameCell> shapes = [];
 
   final List<String> addableWidgets = ['rectangle', 'square', 'circle'];
@@ -186,6 +189,7 @@ class _TemplateEditorCanvasState extends State<TemplateEditorCanvas> {
         Container(
           width: shape.width,
           height: shape.height,
+          clipBehavior: Clip.antiAlias,
           decoration: BoxDecoration(
             color: Colors.grey[100],
             border: Border.all(
@@ -195,15 +199,6 @@ class _TemplateEditorCanvasState extends State<TemplateEditorCanvas> {
                 width: selectedShape == shape ? 3 : 1,
                 style: BorderStyle.solid),
             borderRadius: BorderRadius.circular(shape.borderRadius),
-            boxShadow: selectedShape == shape
-                ? [
-                    BoxShadow(
-                      color: Colors.blue.withValues(alpha: 0.3),
-                      blurRadius: 8,
-                      spreadRadius: 2,
-                    )
-                  ]
-                : null,
           ),
           child: Center(
             child: Icon(
@@ -213,35 +208,52 @@ class _TemplateEditorCanvasState extends State<TemplateEditorCanvas> {
             ),
           ),
         ),
-        Positioned(
-          right: -8,
-          bottom: -8,
-          child: GestureDetector(
-            behavior: HitTestBehavior.translucent,
-            onPanUpdate: (details) {
-              if (selectedShape == shape) {
-                setState(() {
-                  shape.width += details.delta.dx;
-                  shape.height += details.delta.dy;
+        if (selectedShape == shape)
+          Positioned(
+            right: shape.type == 'circle'
+                ? (shape.width / 2) * (1 - 1 / sqrt(2)) -
+                    RESIZABLE_HANDLER_SIZE / 2
+                : 0,
+            bottom: shape.type == 'circle'
+                ? (shape.height / 2) * (1 - 1 / sqrt(2)) -
+                    RESIZABLE_HANDLER_SIZE / 2
+                : 0,
+            child: GestureDetector(
+              behavior: HitTestBehavior.translucent,
+              onPanUpdate: (details) {
+                if (selectedShape == shape) {
+                  setState(() {
+                    switch (shape.type) {
+                      case 'circle':
+                        var grow = max(details.delta.dx, details.delta.dy);
+                        shape.width += grow;
+                        shape.height += grow;
+                        shape.borderRadius = shape.width / 2;
+                        break;
 
-                  if (shape.width < 50) shape.width = 50;
-                  if (shape.height < 50) shape.height = 50;
-                });
-              }
-            },
-            child: selectedShape == shape
-                ? Container(
-                    width: resizeable_handle_size,
-                    height: resizeable_handle_size,
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      border: Border.all(),
-                      shape: BoxShape.circle,
-                    ),
-                  )
-                : SizedBox.shrink(),
-          ),
-        )
+                      default:
+                        shape.width += details.delta.dx;
+                        shape.height += details.delta.dy;
+                    }
+
+                    if (shape.width < MIN_WIDTH) shape.width = MIN_WIDTH;
+                    if (shape.height < MIN_HEIGHT) shape.height = MIN_HEIGHT;
+                  });
+                }
+              },
+              child: selectedShape == shape
+                  ? Container(
+                      width: RESIZABLE_HANDLER_SIZE,
+                      height: RESIZABLE_HANDLER_SIZE,
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        border: Border.all(),
+                        shape: BoxShape.rectangle,
+                      ),
+                    )
+                  : SizedBox.shrink(),
+            ),
+          )
       ]),
     );
   }
@@ -391,13 +403,21 @@ class _TemplateEditorCanvasState extends State<TemplateEditorCanvas> {
               ],
               onSelected: (String type) {
                 setState(() {
+                  double width = MIN_WIDTH * 2;
+                  double height = MIN_HEIGHT * 2;
+                  switch (type) {
+                    case 'rectangle':
+                      width *= 2;
+                      break;
+                  }
                   shapes.add(FrameCell(
                       id: UniqueKey().toString(),
                       type: type,
                       x: 50,
                       y: 50,
-                      width: 100,
-                      height: 100));
+                      width: width,
+                      height: height,
+                      borderRadius: type == 'circle' ? width / 2 : 0));
                 });
               },
             ),
