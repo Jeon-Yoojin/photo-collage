@@ -100,7 +100,15 @@ class _EditPhotoPageState extends State<EditPhotoPage> {
             ),
           ),
           OutlinedButton(
-            onPressed: _saveImage,
+            onPressed: () {
+              if (widget.template.cells.length != imageMap.length) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text('모든 셀에 이미지를 넣어주세요.')),
+                );
+              } else {
+                _saveImage();
+              }
+            },
             child: Container(
               alignment: Alignment.center,
               height: 30,
