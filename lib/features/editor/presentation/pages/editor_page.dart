@@ -51,12 +51,12 @@ class _EditPhotoPageState extends State<EditPhotoPage> {
 
       final boundary = repaintBoundary.currentContext!.findRenderObject()
           as RenderRepaintBoundary;
-      final image = await boundary.toImage(pixelRatio: 2);
+      final image = await boundary.toImage(pixelRatio: 3.0);
       final byteData = await image.toByteData(format: ui.ImageByteFormat.png);
 
       final result = await ImageGallerySaver.saveImage(
         byteData!.buffer.asUint8List(),
-        quality: 60,
+        quality: 100,
         name: 'collage.png',
       );
 
@@ -82,20 +82,40 @@ class _EditPhotoPageState extends State<EditPhotoPage> {
           Expanded(
             child: RepaintBoundary(
               key: repaintBoundary,
-              child: AspectRatio(
-                aspectRatio: widget.template.aspectRatio,
-                child: Container(
-                  color: Colors.white,
-                  child: CollageFrameBuilder(
-                    imageMap: imageMap,
-                    template: widget.template,
-                    onImageSelected: (cellId, image) {
-                      setState(() {
-                        imageMap[cellId] = image;
-                      });
-                    },
-                  ),
-                ),
+              child: LayoutBuilder(
+                builder: (context, constraints) {
+                  final templateAspectRatio = widget.template.canvasWidth > 0 &&
+                          widget.template.canvasHeight > 0
+                      ? widget.template.canvasWidth /
+                          widget.template.canvasHeight
+                      : widget.template.aspectRatio;
+
+                  double containerWidth = constraints.maxWidth;
+                  double containerHeight = constraints.maxHeight;
+
+                  if (containerWidth / containerHeight > templateAspectRatio) {
+                    containerWidth = containerHeight * templateAspectRatio;
+                  } else {
+                    containerHeight = containerWidth / templateAspectRatio;
+                  }
+
+                  return Center(
+                    child: Container(
+                      width: containerWidth,
+                      height: containerHeight,
+                      color: Colors.white,
+                      child: CollageFrameBuilder(
+                        imageMap: imageMap,
+                        template: widget.template,
+                        onImageSelected: (cellId, image) {
+                          setState(() {
+                            imageMap[cellId] = image;
+                          });
+                        },
+                      ),
+                    ),
+                  );
+                },
               ),
             ),
           ),

@@ -85,12 +85,6 @@ class _CollageFrameBuilderState extends State<CollageFrameBuilder> {
 
   @override
   Widget build(BuildContext context) {
-    return AspectRatio(
-      aspectRatio: widget.template.aspectRatio,
-      child: Container(
-        color: Colors.white,
-        child: _buildTemplate(widget.template),
-      ),
-    );
+    return _buildTemplate(widget.template);
   }
 }
