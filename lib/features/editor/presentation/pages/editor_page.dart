@@ -19,6 +19,40 @@ class _EditPhotoPageState extends State<EditPhotoPage> {
   final repaintBoundary = GlobalKey();
   Map<int, XFile> imageMap = <int, XFile>{};
 
+  Future<ui.Image> _cropAndResizeImage(
+    ui.Image image,
+    double targetAspectRatio,
+    double currentAspectRatio,
+  ) async {
+    int cropWidth = image.width;
+    int cropHeight = image.height;
+    double cropX = 0;
+    double cropY = 0;
+
+    if (currentAspectRatio > targetAspectRatio) {
+      cropWidth = (image.height * targetAspectRatio).toInt();
+      cropX = (image.width - cropWidth) / 2;
+    } else {
+      cropHeight = (image.width / targetAspectRatio).toInt();
+      cropY = (image.height - cropHeight) / 2;
+    }
+
+    final recorder = ui.PictureRecorder();
+    final canvas = ui.Canvas(recorder);
+    final paint = ui.Paint()..filterQuality = ui.FilterQuality.high;
+
+    canvas.drawImageRect(
+      image,
+      ui.Rect.fromLTWH(
+          cropX, cropY, cropWidth.toDouble(), cropHeight.toDouble()),
+      ui.Rect.fromLTWH(0, 0, cropWidth.toDouble(), cropHeight.toDouble()),
+      paint,
+    );
+
+    final picture = recorder.endRecording();
+    return await picture.toImage(cropWidth, cropHeight);
+  }
+
   Future<void> _saveImage() async {
     try {
       final shouldProceed = await showDialog<bool>(
@@ -51,8 +85,23 @@ class _EditPhotoPageState extends State<EditPhotoPage> {
 
       final boundary = repaintBoundary.currentContext!.findRenderObject()
           as RenderRepaintBoundary;
-      final image = await boundary.toImage(pixelRatio: 3.0);
-      final byteData = await image.toByteData(format: ui.ImageByteFormat.png);
+      final capturedImage = await boundary.toImage(pixelRatio: 3.0);
+
+      final templateAspectRatio =
+          widget.template.canvasWidth > 0 && widget.template.canvasHeight > 0
+              ? widget.template.canvasWidth / widget.template.canvasHeight
+              : widget.template.aspectRatio;
+
+      final capturedAspectRatio = capturedImage.width / capturedImage.height;
+
+      final resizedImage = await _cropAndResizeImage(
+        capturedImage,
+        templateAspectRatio,
+        capturedAspectRatio,
+      );
+
+      final byteData =
+          await resizedImage.toByteData(format: ui.ImageByteFormat.png);
 
       final result = await ImageGallerySaver.saveImage(
         byteData!.buffer.asUint8List(),
