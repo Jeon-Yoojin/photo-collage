@@ -5,6 +5,7 @@ import 'package:image_picker/image_picker.dart';
 import 'dart:ui' as ui;
 import 'package:permission_handler/permission_handler.dart';
 import 'package:recall_scanner/data/database/template_model.dart';
+import 'package:recall_scanner/extensions/layout_extension.dart';
 import '../widgets/collage_frame_builder.dart';
 
 class EditPhotoPage extends StatefulWidget {
@@ -87,11 +88,7 @@ class _EditPhotoPageState extends State<EditPhotoPage> {
           as RenderRepaintBoundary;
       final capturedImage = await boundary.toImage(pixelRatio: 3.0);
 
-      final templateAspectRatio =
-          widget.template.canvasWidth > 0 && widget.template.canvasHeight > 0
-              ? widget.template.canvasWidth / widget.template.canvasHeight
-              : widget.template.aspectRatio;
-
+      final templateAspectRatio = widget.template.getAspectRatio();
       final capturedAspectRatio = capturedImage.width / capturedImage.height;
 
       final resizedImage = await _cropAndResizeImage(
@@ -133,25 +130,12 @@ class _EditPhotoPageState extends State<EditPhotoPage> {
               key: repaintBoundary,
               child: LayoutBuilder(
                 builder: (context, constraints) {
-                  final templateAspectRatio = widget.template.canvasWidth > 0 &&
-                          widget.template.canvasHeight > 0
-                      ? widget.template.canvasWidth /
-                          widget.template.canvasHeight
-                      : widget.template.aspectRatio;
-
-                  double containerWidth = constraints.maxWidth;
-                  double containerHeight = constraints.maxHeight;
-
-                  if (containerWidth / containerHeight > templateAspectRatio) {
-                    containerWidth = containerHeight * templateAspectRatio;
-                  } else {
-                    containerHeight = containerWidth / templateAspectRatio;
-                  }
+                  final templateSize = widget.template.layoutSize(constraints);
 
                   return Center(
                     child: Container(
-                      width: containerWidth,
-                      height: containerHeight,
+                      width: templateSize.width,
+                      height: templateSize.height,
                       color: Colors.white,
                       child: CollageFrameBuilder(
                         imageMap: imageMap,
