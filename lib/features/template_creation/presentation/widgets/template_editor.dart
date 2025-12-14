@@ -1,6 +1,7 @@
 import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:recall_scanner/common/utils/layout.dart';
 import 'package:recall_scanner/data/database/cell_model.dart';
 import 'package:recall_scanner/data/database/template_model.dart';
 import 'package:recall_scanner/data/repository/template_repository.dart';
@@ -8,18 +9,7 @@ import 'package:recall_scanner/models/frame_cell.dart';
 import 'package:recall_scanner/provider/change_notifier.dart';
 
 class TemplateEditorCanvas extends StatefulWidget {
-  final double? selectedAspectRatio;
-  final double? canvasWidth;
-  final double? canvasHeight;
-  final Function(double) setSelectedAspectRatio;
-
-  const TemplateEditorCanvas({
-    super.key,
-    this.selectedAspectRatio,
-    this.canvasWidth,
-    this.canvasHeight,
-    required this.setSelectedAspectRatio,
-  });
+  const TemplateEditorCanvas({super.key});
 
   @override
   State<TemplateEditorCanvas> createState() => _TemplateEditorCanvasState();
@@ -31,6 +21,9 @@ class _TemplateEditorCanvasState extends State<TemplateEditorCanvas> {
   final MIN_WIDTH = 50.0;
   final MIN_HEIGHT = 50.0;
   List<FrameCell> shapes = [];
+
+  double? selectedAspectRatio;
+  BoxConstraints? _boxConstraints;
 
   final List<String> addableWidgets = ['rectangle', 'square', 'circle'];
 
@@ -47,10 +40,17 @@ class _TemplateEditorCanvasState extends State<TemplateEditorCanvas> {
     final repo = TemplateRepository();
     final provider = Provider.of<TemplateProvider>(context, listen: false);
 
+    if (_boxConstraints == null) return;
+
+    final templateSize = calcTemplateSizeFromRatio(
+      _boxConstraints!,
+      aspectRatio: selectedAspectRatio ?? 1.0,
+    );
+
     final template = TemplateModel()
-      ..canvasWidth = widget.canvasWidth ?? 0
-      ..canvasHeight = widget.canvasHeight ?? 0
-      ..aspectRatio = widget.selectedAspectRatio ?? 1.0;
+      ..canvasWidth = templateSize.width
+      ..canvasHeight = templateSize.height
+      ..aspectRatio = selectedAspectRatio ?? 1.0;
 
     final cells = <CellModel>[];
     for (var shape in shapes) {
@@ -80,6 +80,13 @@ class _TemplateEditorCanvasState extends State<TemplateEditorCanvas> {
       default:
         return Icons.add;
     }
+  }
+
+  List<FrameCell> _filterShapesByCanvas(
+      List<FrameCell> shapes, double canvasWidth, double canvasHeight) {
+    return shapes.where((shape) {
+      return shape.x <= canvasWidth && shape.y <= canvasHeight;
+    }).toList();
   }
 
   Widget _buildFloatingMenu(FrameCell shape) {
@@ -163,7 +170,6 @@ class _TemplateEditorCanvasState extends State<TemplateEditorCanvas> {
           double newX = shape.x + details.delta.dx;
           double newY = shape.y + details.delta.dy;
 
-          // canvas 경계 체크
           if (canvasWidth != null && canvasHeight != null) {
             if (newX < 0) newX = 0;
             if (newX + shape.width > canvasWidth) {
@@ -266,7 +272,7 @@ class _TemplateEditorCanvasState extends State<TemplateEditorCanvas> {
     return width / height;
   }
 
-  Widget _buildCanvasSizeHandler() {
+  Widget _buildCanvasSizeHandler(BoxConstraints constraints) {
     final List<String> aspectRatioStrings = [
       '1:1',
       '4:5',
@@ -281,15 +287,33 @@ class _TemplateEditorCanvasState extends State<TemplateEditorCanvas> {
       child: Row(
         children: aspectRatioStrings.map((ratioString) {
           final ratioValue = _parseAspectRatio(ratioString);
-          final isSelected = widget.selectedAspectRatio != null &&
-              (widget.selectedAspectRatio! - ratioValue).abs() < 0.01;
+          final isSelected = selectedAspectRatio != null &&
+              (selectedAspectRatio! - ratioValue).abs() < 0.01;
           return Padding(
             padding: EdgeInsets.symmetric(horizontal: 4),
             child: ChoiceChip(
               label: Text(ratioString),
               selected: isSelected,
               onSelected: (selected) {
-                widget.setSelectedAspectRatio(ratioValue);
+                setState(() {
+                  selectedAspectRatio = ratioValue;
+
+                  final templateSize = calcTemplateSizeFromRatio(
+                    constraints,
+                    aspectRatio: ratioValue,
+                  );
+
+                  shapes = _filterShapesByCanvas(
+                    shapes,
+                    templateSize.width,
+                    templateSize.height,
+                  );
+
+                  if (selectedShape != null &&
+                      !shapes.any((s) => s.id == selectedShape!.id)) {
+                    selectedShape = null;
+                  }
+                });
               },
               selectedColor: Colors.blue.withValues(alpha: 0.3),
               checkmarkColor: Colors.blue,
@@ -303,52 +327,33 @@ class _TemplateEditorCanvasState extends State<TemplateEditorCanvas> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: Column(
-        children: [
-          Expanded(
-            child: LayoutBuilder(
-              builder: (context, constraints) {
-                double canvasWidth;
-                double canvasHeight;
+      body: LayoutBuilder(
+        builder: (context, constraints) {
+          _boxConstraints = constraints;
 
-                // width와 height가 명시적으로 지정된 경우
-                if (widget.canvasWidth != null && widget.canvasHeight != null) {
-                  canvasWidth = widget.canvasWidth!;
-                  canvasHeight = widget.canvasHeight!;
-                } else if (widget.selectedAspectRatio != null) {
-                  final aspectRatio = widget.selectedAspectRatio!;
-                  // 가로가 더 긴 경우 (landscape)
-                  if (aspectRatio >= 1.0) {
-                    canvasWidth = constraints.maxWidth;
-                    canvasHeight = canvasWidth / aspectRatio;
-                  }
-                  // 세로가 더 긴 경우 (portrait)
-                  else {
-                    canvasHeight = constraints.maxHeight;
-                    canvasWidth = canvasHeight * aspectRatio;
-                  }
-                }
-                // default (1:1)
-                else {
-                  final size = constraints.maxWidth < constraints.maxHeight
-                      ? constraints.maxWidth
-                      : constraints.maxHeight;
-                  canvasWidth = size;
-                  canvasHeight = size;
-                }
+          final templateSize = calcTemplateSizeFromRatio(
+            constraints,
+            aspectRatio: selectedAspectRatio ?? 1.0,
+          );
 
-                return Center(
+          final visibleShapes = _filterShapesByCanvas(
+              shapes, templateSize.width, templateSize.height);
+
+          return Column(
+            children: [
+              Expanded(
+                child: Center(
                   child: Container(
-                    width: canvasWidth,
-                    height: canvasHeight,
+                    width: templateSize.width,
+                    height: templateSize.height,
                     color: Colors.white,
                     child: ClipRect(
                       child: Stack(children: [
-                        ...shapes.map((shape) => Positioned(
+                        ...visibleShapes.map((shape) => Positioned(
                               left: shape.x,
                               top: shape.y,
-                              child: _buildResizable(
-                                  shape, canvasWidth, canvasHeight),
+                              child: _buildResizable(shape, templateSize.width,
+                                  templateSize.height),
                             )),
                         if (selectedShape != null)
                           Positioned(
@@ -362,25 +367,25 @@ class _TemplateEditorCanvasState extends State<TemplateEditorCanvas> {
                       ]),
                     ),
                   ),
-                );
-              },
-            ),
-          ),
-          Container(
-            padding: EdgeInsets.symmetric(vertical: 8, horizontal: 16),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.1),
-                  blurRadius: 4,
-                  offset: Offset(0, -2),
                 ),
-              ],
-            ),
-            child: _buildCanvasSizeHandler(),
-          ),
-        ],
+              ),
+              Container(
+                padding: EdgeInsets.symmetric(vertical: 8, horizontal: 16),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.1),
+                      blurRadius: 4,
+                      offset: Offset(0, -2),
+                    ),
+                  ],
+                ),
+                child: _buildCanvasSizeHandler(constraints),
+              ),
+            ],
+          );
+        },
       ),
       bottomNavigationBar: BottomAppBar(
         child: Row(
