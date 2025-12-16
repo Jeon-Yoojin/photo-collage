@@ -19,7 +19,7 @@ class EditPhotoPage extends StatefulWidget {
 class _EditPhotoPageState extends State<EditPhotoPage> {
   final repaintBoundary = GlobalKey();
   Map<int, XFile> imageMap = <int, XFile>{};
-  Color? selectedFrameColor;
+  Color? selectedFrameColor = Colors.white;
   bool _isColorPaletteVisible = false;
 
   // 색상 팔레트 목록
