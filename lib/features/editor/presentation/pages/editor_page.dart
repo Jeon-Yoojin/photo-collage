@@ -19,6 +19,33 @@ class EditPhotoPage extends StatefulWidget {
 class _EditPhotoPageState extends State<EditPhotoPage> {
   final repaintBoundary = GlobalKey();
   Map<int, XFile> imageMap = <int, XFile>{};
+  Color? selectedFrameColor;
+  bool _isColorPaletteVisible = false;
+
+  // 색상 팔레트 목록
+  final List<Color> colorPalette = [
+    Colors.black,
+    Colors.white,
+    Colors.red,
+    Colors.pink,
+    Colors.purple,
+    Colors.deepPurple,
+    Colors.indigo,
+    Colors.blue,
+    Colors.lightBlue,
+    Colors.cyan,
+    Colors.teal,
+    Colors.green,
+    Colors.lightGreen,
+    Colors.lime,
+    Colors.yellow,
+    Colors.amber,
+    Colors.orange,
+    Colors.deepOrange,
+    Colors.brown,
+    Colors.grey,
+    Colors.blueGrey,
+  ];
 
   Future<ui.Image> _cropAndResizeImage(
     ui.Image image,
@@ -54,6 +81,76 @@ class _EditPhotoPageState extends State<EditPhotoPage> {
     return await picture.toImage(cropWidth, cropHeight);
   }
 
+  void _toggleColorPalette() {
+    setState(() {
+      _isColorPaletteVisible = !_isColorPaletteVisible;
+    });
+  }
+
+  void _selectColor(Color color) {
+    setState(() {
+      selectedFrameColor = color;
+      _isColorPaletteVisible = false;
+    });
+  }
+
+  Widget _buildColorPaletteBar() {
+    return Container(
+      height: 80,
+      decoration: BoxDecoration(
+        color: Colors.white,
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.1),
+            blurRadius: 4,
+            offset: Offset(0, -2),
+          ),
+        ],
+      ),
+      child: ListView.builder(
+        scrollDirection: Axis.horizontal,
+        padding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        itemCount: colorPalette.length,
+        itemBuilder: (context, index) {
+          final color = colorPalette[index];
+          final isSelected = selectedFrameColor == color;
+          final brightness = ThemeData.estimateBrightnessForColor(color);
+          final checkIconColor =
+              brightness == Brightness.dark ? Colors.white : Colors.black;
+
+          return GestureDetector(
+            onTap: () => _selectColor(color),
+            child: Container(
+              width: 40,
+              height: 40,
+              margin: EdgeInsets.only(right: 12),
+              decoration: BoxDecoration(
+                color: color,
+                shape: BoxShape.circle,
+                border: Border.all(
+                  color: isSelected
+                      ? Colors.black
+                      : Colors.grey.withValues(alpha: 0.3),
+                  width: isSelected ? 3 : 2,
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.1),
+                    blurRadius: 4,
+                    offset: Offset(0, 2),
+                  ),
+                ],
+              ),
+              child: isSelected
+                  ? Icon(Icons.check, color: checkIconColor, size: 24)
+                  : null,
+            ),
+          );
+        },
+      ),
+    );
+  }
+
   Future<void> _saveImage() async {
     try {
       final shouldProceed = await showDialog<bool>(
@@ -86,7 +183,7 @@ class _EditPhotoPageState extends State<EditPhotoPage> {
 
       final boundary = repaintBoundary.currentContext!.findRenderObject()
           as RenderRepaintBoundary;
-      final capturedImage = await boundary.toImage(pixelRatio: 3.0);
+      final capturedImage = await boundary.toImage(pixelRatio: 5.0);
 
       final templateAspectRatio = widget.template.getAspectRatio();
       final capturedAspectRatio = capturedImage.width / capturedImage.height;
@@ -136,7 +233,7 @@ class _EditPhotoPageState extends State<EditPhotoPage> {
                     child: Container(
                       width: templateSize.width,
                       height: templateSize.height,
-                      color: Colors.white,
+                      color: selectedFrameColor,
                       child: CollageFrameBuilder(
                         imageMap: imageMap,
                         template: widget.template,
@@ -167,6 +264,59 @@ class _EditPhotoPageState extends State<EditPhotoPage> {
               height: 30,
               width: 250,
               child: Text('이미지 저장', style: TextStyle(fontSize: 20)),
+            ),
+          ),
+        ],
+      ),
+      bottomNavigationBar: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          AnimatedContainer(
+            duration: Duration(milliseconds: 300),
+            curve: Curves.easeInOut,
+            height: _isColorPaletteVisible ? 80 : 0,
+            // clipBehavior: Clip.hardEdge,
+            child: _isColorPaletteVisible
+                ? _buildColorPaletteBar()
+                : SizedBox.shrink(),
+          ),
+          BottomAppBar(
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              children: [
+                PopupMenuButton<String>(
+                  icon: Icon(Icons.draw_sharp),
+                  itemBuilder: (context) => [
+                    // for (var shape in addableWidgets)
+                    //   PopupMenuItem(
+                    //     value: shape,
+                    //     child: Row(
+                    //       children: [
+                    //         Icon(_getShapeIcon(shape)),
+                    //         SizedBox(width: 8),
+                    //         Text(shape),
+                    //       ],
+                    //     ),
+                    //   ),
+                  ],
+                  onSelected: (String type) {},
+                ),
+                IconButton(
+                  icon: Icon(Icons.color_lens),
+                  onPressed: _toggleColorPalette,
+                  tooltip: '프레임 색 변경',
+                  color: _isColorPaletteVisible
+                      ? Theme.of(context).primaryColor
+                      : null,
+                ),
+                IconButton(
+                  icon: Icon(Icons.add_reaction_sharp),
+                  onPressed: () {
+                    // 팝업 형태
+                  },
+                  tooltip: '스티커 추가',
+                ),
+              ],
             ),
           ),
         ],
