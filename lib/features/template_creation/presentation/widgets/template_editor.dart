@@ -22,6 +22,9 @@ class _TemplateEditorCanvasState extends State<TemplateEditorCanvas> {
   final MIN_HEIGHT = 50.0;
   List<FrameCell> shapes = [];
 
+  List<List<FrameCell>> undoStack = [];
+  List<List<FrameCell>> redoStack = [];
+
   double? selectedAspectRatio;
   BoxConstraints? _boxConstraints;
 
@@ -324,6 +327,24 @@ class _TemplateEditorCanvasState extends State<TemplateEditorCanvas> {
     );
   }
 
+  void undo() {
+    final last = undoStack.last;
+    undoStack.removeLast();
+    redoStack.add(last);
+    setState(() {
+      shapes = last;
+    });
+  }
+
+  void redo() {
+    final last = redoStack.last;
+    redoStack.removeLast();
+    undoStack.add(last);
+    setState(() {
+      shapes = last;
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -441,12 +462,16 @@ class _TemplateEditorCanvasState extends State<TemplateEditorCanvas> {
                 tooltip: '스티커 추가'),
             IconButton(
               icon: Icon(Icons.undo),
-              onPressed: () {},
+              onPressed: () {
+                undo();
+              },
               tooltip: '실행 취소',
             ),
             IconButton(
               icon: Icon(Icons.redo),
-              onPressed: () {},
+              onPressed: () {
+                redo();
+              },
               tooltip: '다시 실행',
             ),
             IconButton(
