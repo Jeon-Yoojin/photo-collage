@@ -30,11 +30,31 @@ class _TemplateEditorCanvasState extends State<TemplateEditorCanvas> {
 
   final List<String> addableWidgets = ['rectangle', 'square', 'circle'];
 
+  List<FrameCell> _copyShapesState() {
+    return shapes
+        .map((shape) => FrameCell(
+              id: shape.id,
+              x: shape.x,
+              y: shape.y,
+              width: shape.width,
+              height: shape.height,
+              borderRadius: shape.borderRadius,
+              rotation: shape.rotation,
+              type: shape.type,
+            ))
+        .toList();
+  }
+
+  void _saveStateToUndoStack() {
+    undoStack.add(_copyShapesState());
+    redoStack.clear();
+  }
+
   void deleteItem() {
+    if (selectedShape == null) return;
+    _saveStateToUndoStack();
     setState(() {
-      if (selectedShape != null) {
-        shapes.removeWhere((shape) => shape.id == selectedShape!.id);
-      }
+      shapes.removeWhere((shape) => shape.id == selectedShape!.id);
       selectedShape = null;
     });
   }
@@ -112,6 +132,7 @@ class _TemplateEditorCanvasState extends State<TemplateEditorCanvas> {
           IconButton(
             icon: Icon(Icons.copy, size: 20),
             onPressed: () {
+              _saveStateToUndoStack();
               setState(() {
                 shapes.add(FrameCell(
                   id: UniqueKey().toString(),
@@ -132,10 +153,10 @@ class _TemplateEditorCanvasState extends State<TemplateEditorCanvas> {
           IconButton(
             icon: Icon(Icons.flip_to_front),
             onPressed: () {
+              int index = shapes.indexOf(shape);
+              if (index == shapes.length - 1) return;
+              _saveStateToUndoStack();
               setState(() {
-                int index = shapes.indexOf(shape);
-                if (index == shapes.length - 1) return;
-
                 shapes.removeAt(index);
                 shapes.insert(index + 1, shape);
               });
@@ -147,10 +168,10 @@ class _TemplateEditorCanvasState extends State<TemplateEditorCanvas> {
           IconButton(
             icon: Icon(Icons.flip_to_back),
             onPressed: () {
+              int index = shapes.indexOf(shape);
+              if (index == 0) return;
+              _saveStateToUndoStack();
               setState(() {
-                int index = shapes.indexOf(shape);
-                if (index == 0) return;
-
                 shapes.removeAt(index);
                 shapes.insert(index - 1, shape);
               });
@@ -167,6 +188,9 @@ class _TemplateEditorCanvasState extends State<TemplateEditorCanvas> {
   Widget _buildResizable(
       FrameCell shape, double? canvasWidth, double? canvasHeight) {
     return GestureDetector(
+      onPanStart: (details) {
+        _saveStateToUndoStack();
+      },
       onPanUpdate: (details) {
         setState(() {
           selectedShape = null;
@@ -229,6 +253,11 @@ class _TemplateEditorCanvasState extends State<TemplateEditorCanvas> {
                 : 0,
             child: GestureDetector(
               behavior: HitTestBehavior.translucent,
+              onPanStart: (details) {
+                if (selectedShape == shape) {
+                  _saveStateToUndoStack();
+                }
+              },
               onPanUpdate: (details) {
                 if (selectedShape == shape) {
                   setState(() {
@@ -298,6 +327,7 @@ class _TemplateEditorCanvasState extends State<TemplateEditorCanvas> {
               label: Text(ratioString),
               selected: isSelected,
               onSelected: (selected) {
+                _saveStateToUndoStack();
                 setState(() {
                   selectedAspectRatio = ratioValue;
 
@@ -328,18 +358,18 @@ class _TemplateEditorCanvasState extends State<TemplateEditorCanvas> {
   }
 
   void undo() {
-    final last = undoStack.last;
-    undoStack.removeLast();
-    redoStack.add(last);
+    if (undoStack.isEmpty) return;
+    redoStack.add(_copyShapesState());
+    final last = undoStack.removeLast();
     setState(() {
       shapes = last;
     });
   }
 
   void redo() {
-    final last = redoStack.last;
-    redoStack.removeLast();
-    undoStack.add(last);
+    if (redoStack.isEmpty) return;
+    undoStack.add(_copyShapesState());
+    final last = redoStack.removeLast();
     setState(() {
       shapes = last;
     });
@@ -428,6 +458,7 @@ class _TemplateEditorCanvasState extends State<TemplateEditorCanvas> {
                   ),
               ],
               onSelected: (String type) {
+                _saveStateToUndoStack();
                 setState(() {
                   double width = MIN_WIDTH * 2;
                   double height = MIN_HEIGHT * 2;
