@@ -6,6 +6,7 @@ import 'dart:ui' as ui;
 import 'package:permission_handler/permission_handler.dart';
 import 'package:recall_scanner/data/database/template_model.dart';
 import 'package:recall_scanner/extensions/layout_extension.dart';
+import 'package:recall_scanner/features/editor/presentation/widgets/sticker_picker_sheet.dart';
 import '../widgets/collage_frame_builder.dart';
 
 class EditPhotoPage extends StatefulWidget {
@@ -312,7 +313,17 @@ class _EditPhotoPageState extends State<EditPhotoPage> {
                 IconButton(
                   icon: Icon(Icons.add_reaction_sharp),
                   onPressed: () {
-                    // 팝업 형태
+                    showModalBottomSheet(
+                      context: context,
+                      backgroundColor: Colors.transparent,
+                      builder: (context) {
+                        return StickerPickerSheet(
+                          onStickerSelected: (sticker) {
+                            // TODO: sticker 추가
+                          },
+                        );
+                      },
+                    );
                   },
                   tooltip: '스티커 추가',
                 ),
