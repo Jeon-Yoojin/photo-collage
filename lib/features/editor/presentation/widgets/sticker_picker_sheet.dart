@@ -3,9 +3,10 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:http/http.dart' as http;
+import 'package:recall_scanner/models/sticker.dart';
 
 class StickerPickerSheet extends StatefulWidget {
-  final void Function(ImageProvider) onStickerSelected;
+  final void Function(Sticker) onStickerSelected;
 
   const StickerPickerSheet({super.key, required this.onStickerSelected});
 
@@ -52,6 +53,7 @@ class _StickerPickerSheetState extends State<StickerPickerSheet> {
         return results.map((item) {
           final mediaFormats = item['media_formats'] as Map<String, dynamic>;
 
+          // webp / gif / nanogifpreview 중 하나 반환
           if (mediaFormats['webp'] != null) {
             return mediaFormats['webp']['url'] as String;
           } else if (mediaFormats['gif'] != null) {
@@ -61,7 +63,7 @@ class _StickerPickerSheetState extends State<StickerPickerSheet> {
           }
         }).toList();
       } else {
-        throw Exception('sticker 가져오기 실패: ${response.statusCode}');
+        throw Exception('sticker 가져오기 실패, statusCode: ${response.statusCode}');
       }
     } catch (error) {
       throw Exception('sticker 가져오기 실패: ${error.toString()}');
@@ -73,7 +75,7 @@ class _StickerPickerSheetState extends State<StickerPickerSheet> {
     return Container(
       height: MediaQuery.of(context).size.height * 0.7,
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Colors.black,
         borderRadius: BorderRadius.only(
           topLeft: Radius.circular(20),
           topRight: Radius.circular(20),
@@ -118,6 +120,13 @@ class _StickerPickerSheetState extends State<StickerPickerSheet> {
                 return GestureDetector(
                   onTap: () {
                     Navigator.pop(context);
+                    widget.onStickerSelected(Sticker(
+                        id: index.toString(),
+                        imgPath: sticker.toString(),
+                        x: 0,
+                        y: 0,
+                        width: 0,
+                        height: 0));
                   },
                   child: Image(
                     image: sticker,

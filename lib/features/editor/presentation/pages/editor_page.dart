@@ -7,6 +7,7 @@ import 'package:permission_handler/permission_handler.dart';
 import 'package:recall_scanner/data/database/template_model.dart';
 import 'package:recall_scanner/extensions/layout_extension.dart';
 import 'package:recall_scanner/features/editor/presentation/widgets/sticker_picker_sheet.dart';
+import 'package:recall_scanner/models/sticker.dart';
 import '../widgets/collage_frame_builder.dart';
 
 class EditPhotoPage extends StatefulWidget {
@@ -20,6 +21,8 @@ class EditPhotoPage extends StatefulWidget {
 class _EditPhotoPageState extends State<EditPhotoPage> {
   final repaintBoundary = GlobalKey();
   Map<int, XFile> imageMap = <int, XFile>{};
+  Map<int, Sticker> stickerMap = <int, Sticker>{};
+
   Color? selectedFrameColor = Colors.white;
   bool _isColorPaletteVisible = false;
 
@@ -92,6 +95,12 @@ class _EditPhotoPageState extends State<EditPhotoPage> {
     setState(() {
       selectedFrameColor = color;
       _isColorPaletteVisible = false;
+    });
+  }
+
+  void _addSticker(Sticker sticker) {
+    setState(() {
+      stickerMap[stickerMap.length] = sticker;
     });
   }
 
@@ -319,7 +328,7 @@ class _EditPhotoPageState extends State<EditPhotoPage> {
                       builder: (context) {
                         return StickerPickerSheet(
                           onStickerSelected: (sticker) {
-                            // TODO: sticker 추가
+                            _addSticker(sticker);
                           },
                         );
                       },
