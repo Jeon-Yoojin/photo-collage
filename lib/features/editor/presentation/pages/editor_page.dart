@@ -99,8 +99,16 @@ class _EditPhotoPageState extends State<EditPhotoPage> {
   }
 
   void _addSticker(Sticker sticker) {
+    print(sticker);
     setState(() {
-      stickerMap[stickerMap.length] = sticker;
+      final id = stickerMap.length + 1;
+      stickerMap[id] = Sticker(
+          id: id.toString(),
+          imgPath: sticker.imgPath,
+          x: 0,
+          y: 0,
+          width: 50,
+          height: 50);
     });
   }
 
@@ -235,27 +243,41 @@ class _EditPhotoPageState extends State<EditPhotoPage> {
           Expanded(
             child: RepaintBoundary(
               key: repaintBoundary,
-              child: LayoutBuilder(
-                builder: (context, constraints) {
-                  final templateSize = widget.template.layoutSize(constraints);
-
-                  return Center(
-                    child: Container(
-                      width: templateSize.width,
-                      height: templateSize.height,
-                      color: selectedFrameColor,
-                      child: CollageFrameBuilder(
-                        imageMap: imageMap,
-                        template: widget.template,
-                        onImageSelected: (cellId, image) {
-                          setState(() {
-                            imageMap[cellId] = image;
-                          });
-                        },
-                      ),
-                    ),
-                  );
+              child: GestureDetector(
+                onPanStart: (details) {
+                  print(details);
                 },
+                onPanUpdate: (details) {
+                  // 크기 조절, 이동, 회전
+                  print(details);
+                },
+                onPanEnd: (details) {
+                  print(details);
+                },
+                child: LayoutBuilder(
+                  builder: (context, constraints) {
+                    final templateSize =
+                        widget.template.layoutSize(constraints);
+
+                    return Center(
+                      child: Container(
+                        width: templateSize.width,
+                        height: templateSize.height,
+                        color: selectedFrameColor,
+                        child: CollageFrameBuilder(
+                          imageMap: imageMap,
+                          stickerMap: stickerMap,
+                          template: widget.template,
+                          onImageSelected: (cellId, image) {
+                            setState(() {
+                              imageMap[cellId] = image;
+                            });
+                          },
+                        ),
+                      ),
+                    );
+                  },
+                ),
               ),
             ),
           ),

@@ -2,15 +2,18 @@ import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:recall_scanner/data/database/template_model.dart';
 import 'dart:io';
+import 'package:recall_scanner/models/sticker.dart';
 
 class CollageFrameBuilder extends StatefulWidget {
   final TemplateModel template;
   final Map<int, XFile> imageMap;
+  final Map<int, Sticker> stickerMap;
   final Function(int cellId, XFile image)? onImageSelected;
 
   const CollageFrameBuilder({
     required this.template,
     this.imageMap = const {},
+    this.stickerMap = const {},
     this.onImageSelected,
     super.key,
   });
@@ -40,6 +43,7 @@ class _CollageFrameBuilderState extends State<CollageFrameBuilder> {
         fit: StackFit.expand,
         children: template.cells.map((cell) {
           final imageFile = widget.imageMap[cell.id];
+          // final sticker = widget.stickerMap[]
 
           Widget cellWidget;
           if (imageFile != null) {
