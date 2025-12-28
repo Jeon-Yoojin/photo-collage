@@ -98,13 +98,13 @@ class _EditPhotoPageState extends State<EditPhotoPage> {
     });
   }
 
-  void _addSticker(Sticker sticker) {
-    print(sticker);
+  void _addSticker(String imgPath) {
     setState(() {
       final id = stickerMap.length + 1;
+
       stickerMap[id] = Sticker(
           id: id.toString(),
-          imgPath: sticker.imgPath,
+          imgPath: imgPath,
           x: 0,
           y: 0,
           width: 50,
@@ -349,8 +349,8 @@ class _EditPhotoPageState extends State<EditPhotoPage> {
                       backgroundColor: Colors.transparent,
                       builder: (context) {
                         return StickerPickerSheet(
-                          onStickerSelected: (sticker) {
-                            _addSticker(sticker);
+                          onStickerSelected: (String imgPath) {
+                            _addSticker(imgPath);
                           },
                         );
                       },

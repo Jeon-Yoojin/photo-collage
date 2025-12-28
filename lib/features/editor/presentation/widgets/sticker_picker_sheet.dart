@@ -3,10 +3,9 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:http/http.dart' as http;
-import 'package:recall_scanner/models/sticker.dart';
 
 class StickerPickerSheet extends StatefulWidget {
-  final void Function(Sticker) onStickerSelected;
+  final void Function(String imgPath) onStickerSelected;
 
   const StickerPickerSheet({super.key, required this.onStickerSelected});
 
@@ -15,14 +14,13 @@ class StickerPickerSheet extends StatefulWidget {
 }
 
 class _StickerPickerSheetState extends State<StickerPickerSheet> {
-  List<ImageProvider> stickerList = [];
+  List<String> imgPathList = [];
   String pos = "";
 
   Future<void> _loadMore() async {
     final newItems = await _fetchMoreStickers('cat');
-    final newImages = newItems.map((item) => NetworkImage(item)).toList();
     setState(() {
-      stickerList.addAll(newImages);
+      imgPathList.addAll(newItems);
     });
   }
 
@@ -101,10 +99,10 @@ class _StickerPickerSheetState extends State<StickerPickerSheet> {
                 mainAxisSpacing: 8,
                 childAspectRatio: 1,
               ),
-              itemCount: stickerList.length + 1,
+              itemCount: imgPathList.length + 1,
               itemBuilder: (context, index) {
-                if (index == stickerList.length) {
-                  if (stickerList.isEmpty || pos != "") {
+                if (index == imgPathList.length) {
+                  if (imgPathList.isEmpty || pos != "") {
                     _loadMore();
                     return Container(
                       padding: EdgeInsets.all(16),
@@ -116,20 +114,14 @@ class _StickerPickerSheetState extends State<StickerPickerSheet> {
                   }
                 }
 
-                final sticker = stickerList[index];
+                final imgPath = imgPathList[index];
                 return GestureDetector(
                   onTap: () {
                     Navigator.pop(context);
-                    widget.onStickerSelected(Sticker(
-                        id: index.toString(),
-                        imgPath: sticker.toString(),
-                        x: 0,
-                        y: 0,
-                        width: 0,
-                        height: 0));
+                    widget.onStickerSelected(imgPath);
                   },
                   child: Image(
-                    image: sticker,
+                    image: NetworkImage(imgPath),
                     fit: BoxFit.cover,
                   ),
                 );

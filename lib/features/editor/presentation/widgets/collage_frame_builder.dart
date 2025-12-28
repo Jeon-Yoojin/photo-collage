@@ -41,48 +41,71 @@ class _CollageFrameBuilderState extends State<CollageFrameBuilder> {
 
       return Stack(
         fit: StackFit.expand,
-        children: template.cells.map((cell) {
-          final imageFile = widget.imageMap[cell.id];
-          // final sticker = widget.stickerMap[]
+        children: [
+          ...template.cells.map((cell) {
+            final imageFile = widget.imageMap[cell.id];
 
-          Widget cellWidget;
-          if (imageFile != null) {
-            cellWidget = Image.file(File(imageFile.path), fit: BoxFit.cover);
-          } else {
-            cellWidget = Container(
-              color: Colors.grey[300],
-              child: Center(
-                child: Icon(Icons.image, color: Colors.grey[700], size: 36),
-              ),
+            Widget cellWidget;
+            if (imageFile != null) {
+              cellWidget = Image.file(File(imageFile.path), fit: BoxFit.cover);
+            } else {
+              cellWidget = Container(
+                color: Colors.grey[300],
+                child: Center(
+                  child: Icon(Icons.image, color: Colors.grey[700], size: 36),
+                ),
+              );
+            }
+
+            cellWidget = GestureDetector(
+              onTap: () => _getImages(cell.id),
+              child: cellWidget,
             );
-          }
 
-          cellWidget = GestureDetector(
-            onTap: () => _getImages(cell.id),
-            child: cellWidget,
-          );
+            if (cell.borderRadius > 0 || cell.rotation != 0) {
+              cellWidget = Transform.rotate(
+                  angle: cell.rotation * (3.14159265359 / 180),
+                  child: ClipRRect(
+                      borderRadius: BorderRadius.circular(cell.borderRadius),
+                      child: cellWidget));
+            }
 
-          if (cell.borderRadius > 0 || cell.rotation != 0) {
-            cellWidget = Transform.rotate(
-                angle: cell.rotation * (3.14159265359 / 180),
-                child: ClipRRect(
-                    borderRadius: BorderRadius.circular(cell.borderRadius),
-                    child: cellWidget));
-          }
+            final relativeX = cell.x / canvasW;
+            final relativeY = cell.y / canvasH;
+            final relativeWidth = cell.width / canvasW;
+            final relativeHeight = cell.height / canvasH;
 
-          final relativeX = cell.x / canvasW;
-          final relativeY = cell.y / canvasH;
-          final relativeWidth = cell.width / canvasW;
-          final relativeHeight = cell.height / canvasH;
+            return Positioned(
+              left: relativeX * maxW,
+              top: relativeY * maxH,
+              width: relativeWidth * maxW,
+              height: relativeHeight * maxH,
+              child: cellWidget,
+            );
+          }),
+          ...widget.stickerMap.values.map((sticker) {
+            Widget stickerWidget;
+            stickerWidget = Image.network(
+              sticker.imgPath,
+              fit: BoxFit.contain,
+            );
 
-          return Positioned(
-            left: relativeX * maxW,
-            top: relativeY * maxH,
-            width: relativeWidth * maxW,
-            height: relativeHeight * maxH,
-            child: cellWidget,
-          );
-        }).toList(),
+            if (sticker.rotation != 0) {
+              stickerWidget = Transform.rotate(
+                angle: sticker.rotation * (3.14159265359 / 180),
+                child: stickerWidget,
+              );
+            }
+
+            return Positioned(
+              left: sticker.x,
+              top: sticker.y,
+              width: sticker.width,
+              height: sticker.height,
+              child: stickerWidget,
+            );
+          }),
+        ],
       );
     });
   }
