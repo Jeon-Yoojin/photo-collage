@@ -1,5 +1,5 @@
 class Sticker {
-  final String id;
+  final int id;
   final String imgPath;
   double x;
   double y;
