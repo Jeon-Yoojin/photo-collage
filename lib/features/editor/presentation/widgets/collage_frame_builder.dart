@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:recall_scanner/data/database/template_model.dart';
+import 'package:recall_scanner/features/editor/presentation/widgets/drawing_layer.dart';
 import 'dart:io';
 import 'package:recall_scanner/models/sticker.dart';
 
@@ -8,6 +9,10 @@ class CollageFrameBuilder extends StatefulWidget {
   final TemplateModel template;
   final Map<int, XFile> imageMap;
   final Map<int, Sticker> stickerMap;
+
+  final bool isDrawingMode;
+  final Color drawColor;
+  final double strokeWidth;
 
   final Function(int cellId, XFile image)? onImageSelected;
   final Function(Sticker sticker) onStickerMoved;
@@ -17,6 +22,9 @@ class CollageFrameBuilder extends StatefulWidget {
     required this.template,
     this.imageMap = const {},
     this.stickerMap = const {},
+    this.isDrawingMode = false,
+    this.drawColor = Colors.black,
+    this.strokeWidth = 2.0,
     this.onImageSelected,
     required this.onStickerMoved,
     required this.onStickerUpdated,
@@ -189,6 +197,11 @@ class _CollageFrameBuilderState extends State<CollageFrameBuilder> {
               child: stickerWidget,
             );
           }),
+          if (widget.isDrawingMode)
+            Positioned.fill(
+                child: DrawingLayer(
+                    drawColor: widget.drawColor,
+                    strokeWidth: widget.strokeWidth)),
         ],
       );
     });
