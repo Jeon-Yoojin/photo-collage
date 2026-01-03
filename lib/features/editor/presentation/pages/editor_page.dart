@@ -10,6 +10,13 @@ import 'package:recall_scanner/features/editor/presentation/widgets/sticker_pick
 import 'package:recall_scanner/models/sticker.dart';
 import '../widgets/collage_frame_builder.dart';
 
+enum BottomItemType {
+  none,
+  penTool,
+  colorPalette,
+  stickerPicker,
+}
+
 class EditPhotoPage extends StatefulWidget {
   final TemplateModel template;
   const EditPhotoPage({super.key, required this.template});
@@ -24,7 +31,8 @@ class _EditPhotoPageState extends State<EditPhotoPage> {
   Map<int, Sticker> stickerMap = <int, Sticker>{};
 
   Color? selectedFrameColor = Colors.white;
-  bool _isColorPaletteVisible = false;
+  Color? selectedPenColor = Colors.black;
+  BottomItemType _selectedBottomItemType = BottomItemType.none;
 
   // 색상 팔레트 목록
   final List<Color> colorPalette = [
@@ -85,16 +93,44 @@ class _EditPhotoPageState extends State<EditPhotoPage> {
     return await picture.toImage(cropWidth, cropHeight);
   }
 
-  void _toggleColorPalette() {
-    setState(() {
-      _isColorPaletteVisible = !_isColorPaletteVisible;
-    });
+  void _selectBottomBarItem(int index) {
+    switch (index) {
+      case 0:
+        setState(() {
+          _isPenToolVisible = !_isPenToolVisible;
+        });
+        break;
+      case 1:
+        setState(() {
+          _isColorPaletteVisible = !_isColorPaletteVisible;
+        });
+        break;
+      case 2:
+        showModalBottomSheet(
+          context: context,
+          backgroundColor: Colors.transparent,
+          builder: (context) {
+            return StickerPickerSheet(
+              onStickerSelected: (String imgPath) {
+                _addSticker(imgPath);
+              },
+            );
+          },
+        );
+        break;
+    }
   }
 
   void _selectColor(Color color) {
     setState(() {
       selectedFrameColor = color;
       _isColorPaletteVisible = false;
+    });
+  }
+
+  void _selectPenColor(Color color) {
+    setState(() {
+      selectedPenColor = color;
     });
   }
 
@@ -162,6 +198,57 @@ class _EditPhotoPageState extends State<EditPhotoPage> {
         },
       ),
     );
+  }
+
+  Widget _buildPenToolBar() {
+    return Container(
+        height: 80,
+        decoration: BoxDecoration(
+          color: Colors.white,
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.1),
+              blurRadius: 4,
+              offset: Offset(0, -2),
+            ),
+          ],
+        ),
+        child: ListView.builder(
+            scrollDirection: Axis.horizontal,
+            padding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            itemCount: colorPalette.length,
+            itemBuilder: (context, index) {
+              final color = colorPalette[index];
+              final isSelected = selectedPenColor == color;
+              final brightness = ThemeData.estimateBrightnessForColor(color);
+              final checkIconColor =
+                  brightness == Brightness.dark ? Colors.white : Colors.black;
+              return GestureDetector(
+                  onTap: () => _selectPenColor(color),
+                  child: Container(
+                    width: 40,
+                    height: 40,
+                    margin: EdgeInsets.only(right: 12),
+                    decoration: BoxDecoration(
+                        color: color,
+                        shape: BoxShape.circle,
+                        border: Border.all(
+                            color: isSelected
+                                ? Colors.black
+                                : Colors.grey.withValues(alpha: 0.3),
+                            width: isSelected ? 3 : 2),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withValues(alpha: 0.1),
+                            blurRadius: 4,
+                            offset: Offset(0, 2),
+                          )
+                        ]),
+                    child: isSelected
+                        ? Icon(Icons.check, color: checkIconColor, size: 24)
+                        : null,
+                  ));
+            }));
   }
 
   Future<void> _saveImage() async {
@@ -251,6 +338,9 @@ class _EditPhotoPageState extends State<EditPhotoPage> {
                         imageMap: imageMap,
                         stickerMap: stickerMap,
                         template: widget.template,
+                        isDrawingMode: _isPenToolVisible,
+                        drawColor: selectedPenColor ?? Colors.black,
+                        strokeWidth: 2.0,
                         onImageSelected: (cellId, image) {
                           setState(() {
                             imageMap[cellId] = image;
@@ -299,35 +389,28 @@ class _EditPhotoPageState extends State<EditPhotoPage> {
             duration: Duration(milliseconds: 300),
             curve: Curves.easeInOut,
             height: _isColorPaletteVisible ? 80 : 0,
-            // clipBehavior: Clip.hardEdge,
             child: _isColorPaletteVisible
                 ? _buildColorPaletteBar()
                 : SizedBox.shrink(),
+          ),
+          AnimatedContainer(
+            duration: Duration(milliseconds: 300),
+            curve: Curves.easeInOut,
+            height: _isPenToolVisible ? 80 : 0,
+            child: _isPenToolVisible ? _buildPenToolBar() : SizedBox.shrink(),
           ),
           BottomAppBar(
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               children: [
-                PopupMenuButton<String>(
+                IconButton(
                   icon: Icon(Icons.draw_sharp),
-                  itemBuilder: (context) => [
-                    // for (var shape in addableWidgets)
-                    //   PopupMenuItem(
-                    //     value: shape,
-                    //     child: Row(
-                    //       children: [
-                    //         Icon(_getShapeIcon(shape)),
-                    //         SizedBox(width: 8),
-                    //         Text(shape),
-                    //       ],
-                    //     ),
-                    //   ),
-                  ],
-                  onSelected: (String type) {},
+                  onPressed: () => _selectBottomBarItem(0),
+                  tooltip: '펜 도구',
                 ),
                 IconButton(
                   icon: Icon(Icons.color_lens),
-                  onPressed: _toggleColorPalette,
+                  onPressed: () => _selectBottomBarItem(1),
                   tooltip: '프레임 색 변경',
                   color: _isColorPaletteVisible
                       ? Theme.of(context).primaryColor
@@ -335,19 +418,7 @@ class _EditPhotoPageState extends State<EditPhotoPage> {
                 ),
                 IconButton(
                   icon: Icon(Icons.add_reaction_sharp),
-                  onPressed: () {
-                    showModalBottomSheet(
-                      context: context,
-                      backgroundColor: Colors.transparent,
-                      builder: (context) {
-                        return StickerPickerSheet(
-                          onStickerSelected: (String imgPath) {
-                            _addSticker(imgPath);
-                          },
-                        );
-                      },
-                    );
-                  },
+                  onPressed: () => _selectBottomBarItem(2),
                   tooltip: '스티커 추가',
                 ),
               ],
