@@ -97,15 +97,24 @@ class _EditPhotoPageState extends State<EditPhotoPage> {
     switch (index) {
       case 0:
         setState(() {
-          _isPenToolVisible = !_isPenToolVisible;
+          _selectedBottomItemType =
+              _selectedBottomItemType == BottomItemType.penTool
+                  ? BottomItemType.none
+                  : BottomItemType.penTool;
         });
         break;
       case 1:
         setState(() {
-          _isColorPaletteVisible = !_isColorPaletteVisible;
+          _selectedBottomItemType =
+              _selectedBottomItemType == BottomItemType.colorPalette
+                  ? BottomItemType.none
+                  : BottomItemType.colorPalette;
         });
         break;
       case 2:
+        setState(() {
+          _selectedBottomItemType = BottomItemType.stickerPicker;
+        });
         showModalBottomSheet(
           context: context,
           backgroundColor: Colors.transparent,
@@ -124,7 +133,6 @@ class _EditPhotoPageState extends State<EditPhotoPage> {
   void _selectColor(Color color) {
     setState(() {
       selectedFrameColor = color;
-      _isColorPaletteVisible = false;
     });
   }
 
@@ -338,7 +346,8 @@ class _EditPhotoPageState extends State<EditPhotoPage> {
                         imageMap: imageMap,
                         stickerMap: stickerMap,
                         template: widget.template,
-                        isDrawingMode: _isPenToolVisible,
+                        isDrawingMode:
+                            _selectedBottomItemType == BottomItemType.penTool,
                         drawColor: selectedPenColor ?? Colors.black,
                         strokeWidth: 2.0,
                         onImageSelected: (cellId, image) {
@@ -388,16 +397,19 @@ class _EditPhotoPageState extends State<EditPhotoPage> {
           AnimatedContainer(
             duration: Duration(milliseconds: 300),
             curve: Curves.easeInOut,
-            height: _isColorPaletteVisible ? 80 : 0,
-            child: _isColorPaletteVisible
+            height:
+                _selectedBottomItemType == BottomItemType.colorPalette ? 80 : 0,
+            child: _selectedBottomItemType == BottomItemType.colorPalette
                 ? _buildColorPaletteBar()
                 : SizedBox.shrink(),
           ),
           AnimatedContainer(
             duration: Duration(milliseconds: 300),
             curve: Curves.easeInOut,
-            height: _isPenToolVisible ? 80 : 0,
-            child: _isPenToolVisible ? _buildPenToolBar() : SizedBox.shrink(),
+            height: _selectedBottomItemType == BottomItemType.penTool ? 80 : 0,
+            child: _selectedBottomItemType == BottomItemType.penTool
+                ? _buildPenToolBar()
+                : SizedBox.shrink(),
           ),
           BottomAppBar(
             child: Row(
@@ -407,12 +419,15 @@ class _EditPhotoPageState extends State<EditPhotoPage> {
                   icon: Icon(Icons.draw_sharp),
                   onPressed: () => _selectBottomBarItem(0),
                   tooltip: '펜 도구',
+                  color: _selectedBottomItemType == BottomItemType.penTool
+                      ? Theme.of(context).primaryColor
+                      : null,
                 ),
                 IconButton(
                   icon: Icon(Icons.color_lens),
                   onPressed: () => _selectBottomBarItem(1),
                   tooltip: '프레임 색 변경',
-                  color: _isColorPaletteVisible
+                  color: _selectedBottomItemType == BottomItemType.colorPalette
                       ? Theme.of(context).primaryColor
                       : null,
                 ),

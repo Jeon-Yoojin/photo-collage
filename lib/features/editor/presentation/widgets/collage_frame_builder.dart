@@ -41,6 +41,7 @@ class _CollageFrameBuilderState extends State<CollageFrameBuilder> {
   final Map<int, double> _initialRotations = {};
   final Map<int, Offset> _initialFocalPoints = {};
   final Map<int, Offset> _initialStickerCenters = {};
+  List<List<Offset>> _strokes = [];
 
   void _getImages(int cellId) async {
     final image = await ImagePicker().pickImage(source: ImageSource.gallery);
@@ -48,6 +49,12 @@ class _CollageFrameBuilderState extends State<CollageFrameBuilder> {
     if (image != null) {
       widget.onImageSelected!(cellId, image);
     }
+  }
+
+  void _onDrawingStrokesChanged(List<List<Offset>> strokes) {
+    setState(() {
+      _strokes = strokes;
+    });
   }
 
   Widget _buildTemplate(TemplateModel template) {
@@ -200,6 +207,9 @@ class _CollageFrameBuilderState extends State<CollageFrameBuilder> {
           if (widget.isDrawingMode)
             Positioned.fill(
                 child: DrawingLayer(
+                    isEnabled: widget.isDrawingMode,
+                    strokes: _strokes,
+                    onStrokesChanged: _onDrawingStrokesChanged,
                     drawColor: widget.drawColor,
                     strokeWidth: widget.strokeWidth)),
         ],

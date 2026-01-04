@@ -44,11 +44,15 @@ class DrawingLayer extends StatefulWidget {
   final Color drawColor;
   final double strokeWidth;
   final bool isEnabled;
+  final List<List<Offset>> strokes;
+  final Function(List<List<Offset>>) onStrokesChanged;
 
   const DrawingLayer(
       {super.key,
       required this.drawColor,
       required this.strokeWidth,
+      required this.strokes,
+      required this.onStrokesChanged,
       this.isEnabled = true});
 
   @override
@@ -56,7 +60,6 @@ class DrawingLayer extends StatefulWidget {
 }
 
 class _DrawingLayerState extends State<DrawingLayer> {
-  List<List<Offset>> strokes = [];
   List<Offset> currentStroke = [];
 
   @override
@@ -69,13 +72,20 @@ class _DrawingLayerState extends State<DrawingLayer> {
         if (!widget.isEnabled) return;
         setState(() {
           currentStroke.add(details.localPosition);
-          strokes.add(currentStroke);
+          widget.onStrokesChanged([...widget.strokes, currentStroke]);
         });
       },
       onPanUpdate: (details) {
+        if (!widget.isEnabled) return;
         setState(() {
-          if (!widget.isEnabled) return;
           currentStroke.add(details.localPosition);
+
+          if (widget.strokes.isNotEmpty) {
+            final updatedStrokes = [...widget.strokes];
+            updatedStrokes[updatedStrokes.length - 1] =
+                List.from(currentStroke);
+            widget.onStrokesChanged(updatedStrokes);
+          }
         });
       },
       onPanEnd: (details) {
@@ -84,12 +94,16 @@ class _DrawingLayerState extends State<DrawingLayer> {
           currentStroke = [];
         });
       },
-      child: CustomPaint(
-          painter: DrawingPainter(
-              strokes: strokes,
+      child: IgnorePointer(
+        ignoring: !widget.isEnabled,
+        child: CustomPaint(
+            painter: DrawingPainter(
+              strokes: widget.strokes,
               drawColor: widget.drawColor,
-              strokeWidth: widget.strokeWidth),
-          size: Size.infinite),
+              strokeWidth: widget.strokeWidth,
+            ),
+            size: Size.infinite),
+      ),
     );
   }
 }
