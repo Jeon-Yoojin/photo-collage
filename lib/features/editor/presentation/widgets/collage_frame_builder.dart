@@ -204,14 +204,13 @@ class _CollageFrameBuilderState extends State<CollageFrameBuilder> {
               child: stickerWidget,
             );
           }),
-          if (widget.isDrawingMode)
-            Positioned.fill(
-                child: DrawingLayer(
-                    isEnabled: widget.isDrawingMode,
-                    strokes: _strokes,
-                    onStrokesChanged: _onDrawingStrokesChanged,
-                    drawColor: widget.drawColor,
-                    strokeWidth: widget.strokeWidth)),
+          Positioned.fill(
+              child: DrawingLayer(
+                  isEnabled: widget.isDrawingMode,
+                  strokes: _strokes,
+                  onStrokesChanged: _onDrawingStrokesChanged,
+                  drawColor: widget.drawColor,
+                  strokeWidth: widget.strokeWidth)),
         ],
       );
     });
