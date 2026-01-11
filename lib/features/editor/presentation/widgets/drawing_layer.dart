@@ -10,26 +10,22 @@ class Stroke {
 
 class DrawingPainter extends CustomPainter {
   final List<Stroke> strokes;
-  final Color drawColor;
-  final double strokeWidth;
 
   const DrawingPainter({
     required this.strokes,
-    required this.drawColor,
-    required this.strokeWidth,
   });
 
   @override
   void paint(Canvas canvas, Size size) {
-    final paint = Paint()
-      ..color = drawColor
-      ..strokeWidth = strokeWidth
-      ..style = PaintingStyle.stroke
-      ..strokeCap = StrokeCap.butt
-      ..strokeJoin = StrokeJoin.round;
-
     for (final stroke in strokes) {
       if (stroke.points.length < 2) continue;
+
+      final paint = Paint()
+        ..color = stroke.color
+        ..strokeWidth = stroke.width
+        ..style = PaintingStyle.stroke
+        ..strokeCap = StrokeCap.butt
+        ..strokeJoin = StrokeJoin.round;
 
       final path = Path();
       path.moveTo(stroke.points[0].dx, stroke.points[0].dy);
@@ -53,7 +49,7 @@ class DrawingLayer extends StatefulWidget {
   final double strokeWidth;
   final bool isEnabled;
   final List<Stroke> strokes;
-  final Function(List<List<Offset>>) onStrokesChanged;
+  final Function(List<Stroke>) onStrokesChanged;
 
   const DrawingLayer(
       {super.key,
@@ -68,8 +64,7 @@ class DrawingLayer extends StatefulWidget {
 }
 
 class _DrawingLayerState extends State<DrawingLayer> {
-  Stroke currentStroke =
-      Stroke(points: [], color: widget.drawColor, width: widget.strokeWidth);
+  List<Offset> currentPoints = [];
 
   @override
   Widget build(BuildContext context) {
@@ -80,39 +75,40 @@ class _DrawingLayerState extends State<DrawingLayer> {
       onPanStart: (details) {
         if (!widget.isEnabled) return;
         setState(() {
-          currentStroke.points.add(details.localPosition);
-          widget.onStrokesChanged([...widget.strokes, currentStroke]);
+          currentPoints = [details.localPosition];
+          final newStroke = Stroke(
+              points: List.from(currentPoints),
+              color: widget.drawColor,
+              width: widget.strokeWidth);
+          widget.onStrokesChanged([...widget.strokes, newStroke]);
         });
       },
       onPanUpdate: (details) {
         if (!widget.isEnabled) return;
         setState(() {
-          currentStroke.points.add(details.localPosition);
+          currentPoints.add(details.localPosition);
 
           if (widget.strokes.isNotEmpty) {
             final updatedStrokes = [...widget.strokes];
             updatedStrokes[updatedStrokes.length - 1] = Stroke(
-                points: List.from(currentStroke.points),
-                color: currentStroke.color,
-                width: currentStroke.width);
+                points: List.from(currentPoints),
+                color: widget.drawColor,
+                width: widget.strokeWidth);
             widget.onStrokesChanged(updatedStrokes);
           }
         });
       },
       onPanEnd: (details) {
+        if (!widget.isEnabled) return;
         setState(() {
-          if (!widget.isEnabled) return;
-          currentStroke = Stroke(
-              points: [], color: widget.drawColor, width: widget.strokeWidth);
+          currentPoints = [];
         });
       },
       child: IgnorePointer(
         ignoring: !widget.isEnabled,
         child: CustomPaint(
             painter: DrawingPainter(
-              strokes: [currentStroke, ...widget.strokes],
-              drawColor: widget.drawColor,
-              strokeWidth: widget.strokeWidth,
+              strokes: widget.strokes,
             ),
             size: Size.infinite),
       ),

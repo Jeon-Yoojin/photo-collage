@@ -41,7 +41,7 @@ class _CollageFrameBuilderState extends State<CollageFrameBuilder> {
   final Map<int, double> _initialRotations = {};
   final Map<int, Offset> _initialFocalPoints = {};
   final Map<int, Offset> _initialStickerCenters = {};
-  List<List<Offset>> _strokes = [];
+  List<Stroke> _strokes = [];
 
   void _getImages(int cellId) async {
     final image = await ImagePicker().pickImage(source: ImageSource.gallery);
@@ -51,7 +51,7 @@ class _CollageFrameBuilderState extends State<CollageFrameBuilder> {
     }
   }
 
-  void _onDrawingStrokesChanged(List<List<Offset>> strokes) {
+  void _onDrawingStrokesChanged(List<Stroke> strokes) {
     setState(() {
       _strokes = strokes;
     });
